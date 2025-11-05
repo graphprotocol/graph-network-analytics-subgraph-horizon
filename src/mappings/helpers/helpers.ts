@@ -185,6 +185,7 @@ export function createOrLoadIndexer(indexerAddress: Bytes, timestamp: BigInt ): 
     indexer.allocationCount = 0
     indexer.totalAllocationCount = BigInt.fromI32(0)
     indexer.thawingUntil = BigInt.fromI32(0)
+    indexer.delegatorsCount = BigInt.fromI32(0)
 
     indexer.url = ''
     indexer.geoHash = ''
@@ -347,6 +348,9 @@ export function createOrLoadDelegator(delegatorAddress: Bytes, timestamp: BigInt
     delegator.totalUnstakedTokens = BigInt.fromI32(0)
     delegator.createdAt = timestamp.toI32()
     delegator.totalRealizedRewards = BigDecimal.fromString('0')
+    delegator.lockedTokens = BigInt.fromI32(0)
+    delegator.totalUnrealizedRewards = BigDecimal.fromString('0')
+    delegator.currentDelegation = BigDecimal.fromString('0')
     delegator.stakesCount = 0
     delegator.activeStakesCount = 0
     delegator.save()
@@ -383,7 +387,10 @@ export function createOrLoadDelegatedStake(
     delegatedStake.legacyLockedUntil = 0
     delegatedStake.shareAmount = BigInt.fromI32(0)
     delegatedStake.personalExchangeRate = BigDecimal.fromString('1')
+    delegatedStake.unrealizedRewards = BigDecimal.fromString('0')
     delegatedStake.realizedRewards = BigDecimal.fromString('0')
+    delegatedStake.originalDelegation = BigDecimal.fromString('0')
+    delegatedStake.currentDelegation = BigDecimal.fromString('0')
     delegatedStake.createdAt = timestamp
 
     delegatedStake.save()
@@ -424,7 +431,10 @@ export function createOrLoadDelegatedStakeForProvision(
     delegatedStake.legacyLockedUntil = 0
     delegatedStake.shareAmount = BigInt.fromI32(0)
     delegatedStake.personalExchangeRate = BigDecimal.fromString('1')
+    delegatedStake.unrealizedRewards = BigDecimal.fromString('0')
     delegatedStake.realizedRewards = BigDecimal.fromString('0')
+    delegatedStake.originalDelegation = BigDecimal.fromString('0')
+    delegatedStake.currentDelegation = BigDecimal.fromString('0')
     delegatedStake.createdAt = timestamp
 
     delegatedStake.save()

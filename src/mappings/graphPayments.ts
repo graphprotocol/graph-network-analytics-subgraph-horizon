@@ -1,6 +1,8 @@
 import { addresses } from "../../config/addresses"
 import { GraphPaymentCollected } from "../types/GraphPayments/GraphPayments"
+import { GraphNetwork } from '../types/schema'
 import { createOrLoadEpoch, createOrLoadGraphNetwork, createOrLoadPaymentSource } from "./helpers/helpers"
+import { getAndUpdateGraphNetworkDailyData } from './helpers/daily-data'
 
 export function handleGraphPaymentCollected(event: GraphPaymentCollected): void {
     let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
@@ -16,6 +18,7 @@ export function handleGraphPaymentCollected(event: GraphPaymentCollected): void 
     // update graph network
     graphNetwork.totalTaxedQueryFees = graphNetwork.totalTaxedQueryFees.plus(event.params.tokensProtocol)
     graphNetwork.save()
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 
     // Replicate for payment source specific data
     // Payer here is the PaymentsEscrow in most cases, might need to figure out how to know who funded the escrow in the future

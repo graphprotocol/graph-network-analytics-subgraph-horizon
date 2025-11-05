@@ -17,6 +17,10 @@ import {
   calculatePricePerShare,
   batchUpdateSubgraphSignalledTokens,
 } from './helpers/helpers'
+import {
+  getAndUpdateGraphNetworkDailyData,
+  getAndUpdateSubgraphDeploymentDailyData,
+} from './helpers/daily-data'
 import { zeroBD } from './utils'
 import { addresses } from '../../config/addresses'
 
@@ -157,6 +161,9 @@ export function handleSignalled(event: Signalled): void {
   signalTransaction.subgraphDeployment = event.params.subgraphDeploymentID.toHexString()
   signalTransaction.save()
   graphNetwork.save()
+
+  getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 /**
  * @dev handleRedeemed
@@ -289,6 +296,9 @@ export function handleBurned(event: Burned): void {
   signalTransaction.subgraphDeployment = event.params.subgraphDeploymentID.toHexString()
   signalTransaction.save()
   graphNetwork.save()
+
+  getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -318,6 +328,8 @@ export function handleParameterUpdated(event: ParameterUpdated): void {
     graphNetwork.minimumCurationDeposit = curation.minimumCurationDeposit()
   }
   graphNetwork.save()
+
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 // export function handleImplementationUpdated(event: ImplementationUpdated): void {

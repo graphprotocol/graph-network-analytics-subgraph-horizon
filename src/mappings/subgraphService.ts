@@ -1,7 +1,8 @@
 import { BigDecimal, BigInt, Bytes, ethereum, log } from "@graphprotocol/graph-ts"
 import { AllocationClosed, AllocationCreated, AllocationResized, CurationCutSet, DelegationRatioSet, IndexingRewardsCollected, MaxPOIStalenessSet, ProvisionTokensRangeSet, QueryFeesCollected, RewardsDestinationSet, ServiceProviderRegistered, StakeToFeesRatioSet, ThawingPeriodRangeSet, VerifierCutRangeSet } from "../types/SubgraphService/SubgraphService"
 import { batchUpdateSubgraphSignalledTokens, calculatePricePerShare, createOrLoadDataService, createOrLoadGraphNetwork, createOrLoadEpoch,createOrLoadIndexerQueryFeePaymentAggregation, createOrLoadPaymentSource, createOrLoadProvision, createOrLoadSubgraphDeployment, joinID, updateDelegationExchangeRate } from "./helpers/helpers"
-import { Allocation, Indexer, PoiSubmission, SubgraphDeployment } from "../types/schema"
+import { getAndUpdateGraphNetworkDailyData, getAndUpdateIndexerDailyData, getAndUpdateProvisionDailyData, getAndUpdateDataServiceDailyData, getAndUpdateSubgraphDeploymentDailyData, getAndUpdateDelegatedStakeDailyData, getAndUpdateDelegatorDailyData } from './helpers/daily-data'
+import { Allocation, DataService, GraphNetwork, Indexer, PoiSubmission, Provision, SubgraphDeployment } from "../types/schema"
 import { addresses } from "../../config/addresses"
 import { tuplePrefixBytes } from "./helpers/decoder"
 import { createOrLoadIndexer } from "./helpers/helpers"
@@ -17,7 +18,7 @@ export function handleServiceProviderRegistered(event: ServiceProviderRegistered
         // Update provision
         let provision = createOrLoadProvision(event.params.serviceProvider, event.address, event.block.timestamp)
         provision.url = url
-        provision.geoHash = geoHash
+    provision.geoHash = geoHash
         provision.rewardsDestination = rewardsDestination
         provision.save()
 
@@ -30,6 +31,9 @@ export function handleServiceProviderRegistered(event: ServiceProviderRegistered
         // Change legacy status in case the indexer was created before the Horizon upgrade
         indexer.isLegacy = false
         indexer.save()
+
+        getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+        getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
     } else {
         log.warning("ServiceProviderRegistered failed to decode: {}", [event.params.data.toHexString()])
     }
@@ -45,12 +49,17 @@ export function handleRewardsDestinationSet(event: RewardsDestinationSet): void 
     let indexer = createOrLoadIndexer(event.params.indexer, event.block.timestamp)
     indexer.rewardsDestination = event.params.rewardsDestination
     indexer.save()
+
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
 }
 
 export function handleDelegationRatioSet(event: DelegationRatioSet): void {
     let dataService = createOrLoadDataService(event.address)
     dataService.delegationRatio = event.params.ratio.toI32()
     dataService.save()
+
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
 }
 
 export function handleAllocationCreated(event: AllocationCreated): void {
@@ -123,6 +132,12 @@ export function handleAllocationCreated(event: AllocationCreated): void {
     allocation.poiCount = BigInt.fromI32(0)
     allocation.isLegacy = false
     allocation.save()
+
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
+    getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleAllocationClosed(event: AllocationClosed): void {
@@ -179,6 +194,12 @@ export function handleAllocationClosed(event: AllocationClosed): void {
     let dataService = createOrLoadDataService(event.address)
     dataService.totalTokensAllocated = dataService.totalTokensAllocated.minus(event.params.tokens)
     dataService.save()
+
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
+    getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleAllocationResized(event: AllocationResized): void {
@@ -216,6 +237,12 @@ export function handleAllocationResized(event: AllocationResized): void {
     let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
     graphNetwork.totalTokensAllocated = graphNetwork.totalTokensAllocated.plus(diffTokens)
     graphNetwork.save()
+
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
+    getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleIndexingRewardsCollected(event: IndexingRewardsCollected): void {
@@ -321,6 +348,11 @@ export function handleIndexingRewardsCollected(event: IndexingRewardsCollected):
     )
     // No need to update delegated tokens, as that happens in handleTokensToDelegationPoolAdded
     graphNetwork.save()
+
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateSubgraphDeploymentDailyData(subgraphDeployment as SubgraphDeployment, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleQueryFeesCollected(event: QueryFeesCollected): void {
@@ -424,24 +456,35 @@ export function handleQueryFeesCollected(event: QueryFeesCollected): void {
         delegationPoolQueryFees,
     )
     paymentSource.save()
+
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleCurationCutSet(event: CurationCutSet): void {
     let dataService = createOrLoadDataService(event.address)
     dataService.curationCut = event.params.curationCut
     dataService.save()
+
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
 }
 
 export function handleMaxPOIStalenessSet(event: MaxPOIStalenessSet): void {
     let dataService = createOrLoadDataService(event.address)
     dataService.maxPOIStaleness = event.params.maxPOIStaleness
     dataService.save()
+
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
 }
 
 export function handleStakeToFeesRatioSet(event: StakeToFeesRatioSet): void {
     let dataService = createOrLoadDataService(event.address)
     dataService.stakeToFeesRatio = event.params.ratio
     dataService.save()
+
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
 }
 
 export function handleProvisionTokensRangeSet(event: ProvisionTokensRangeSet): void {
@@ -449,6 +492,8 @@ export function handleProvisionTokensRangeSet(event: ProvisionTokensRangeSet): v
     dataService.minimumProvisionTokens = event.params.min
     dataService.maximumProvisionTokens = event.params.max
     dataService.save()
+
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
 }
 
 export function handleVerifierCutRangeSet(event: VerifierCutRangeSet): void {
@@ -456,6 +501,8 @@ export function handleVerifierCutRangeSet(event: VerifierCutRangeSet): void {
     dataService.minimumVerifierCut = event.params.min
     dataService.maximumVerifierCut = event.params.max
     dataService.save()
+
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
 }
 
 export function handleThawingPeriodRangeSet(event: ThawingPeriodRangeSet): void {
@@ -463,4 +510,6 @@ export function handleThawingPeriodRangeSet(event: ThawingPeriodRangeSet): void 
     dataService.minimumThawingPeriod = event.params.min
     dataService.maximumThawingPeriod = event.params.max
     dataService.save()
+
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
 }

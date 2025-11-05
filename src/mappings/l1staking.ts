@@ -7,6 +7,11 @@ import {
 
 import { Indexer, DelegatedStake, GraphNetwork } from '../types/schema'
 import { calculateCapacities, createOrLoadGraphNetwork, joinID, updateLegacyAdvancedIndexerMetrics, updateDelegationExchangeRate } from './helpers/helpers'
+import {
+  getAndUpdateGraphNetworkDailyData,
+  getAndUpdateIndexerDailyData,
+  getAndUpdateDelegatedStakeDailyData,
+} from './helpers/daily-data'
 
 /*
     /// @dev Emitted when an indexer transfers their stake to L2.
@@ -43,6 +48,9 @@ export function handleIndexerStakeTransferredToL2(event: IndexerStakeTransferred
   graphNetwork.totalTokensStaked = graphNetwork.totalTokensStaked.minus(event.params.transferredStakeTokens)
   graphNetwork.totalTokensStakedTransferredToL2 = graphNetwork.totalTokensStakedTransferredToL2.plus(event.params.transferredStakeTokens)
   graphNetwork.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 /*
     /// @dev Emitted when a delegator transfers their delegation to L2
@@ -93,6 +101,10 @@ export function handleDelegationTransferredToL2(event: DelegationTransferredToL2
   graphNetwork.totalDelegatedTokens = graphNetwork.totalDelegatedTokens.minus(event.params.transferredDelegationTokens)
   graphNetwork.totalDelegatedTokensTransferredToL2 = graphNetwork.totalDelegatedTokensTransferredToL2.plus(event.params.transferredDelegationTokens)
   graphNetwork.save()
+
+  getAndUpdateDelegatedStakeDailyData(delegation as DelegatedStake, event.block.timestamp)
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /*
@@ -112,4 +124,6 @@ export function handleStakeDelegatedUnlockedDueToL2Transfer(
   delegation.lockedUntil = graphNetwork.currentEpoch
   delegation.legacyLockedUntil = graphNetwork.currentEpoch
   delegation.save()
+
+  getAndUpdateDelegatedStakeDailyData(delegation as DelegatedStake, event.block.timestamp)
 }

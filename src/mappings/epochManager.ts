@@ -1,5 +1,7 @@
 import { EpochRun, EpochLengthUpdate } from '../types/EpochManager/EpochManager'
+import { GraphNetwork } from '../types/schema'
 import { createOrLoadEpoch, createEpoch, createOrLoadGraphNetwork } from './helpers/helpers'
+import { getAndUpdateGraphNetworkDailyData } from './helpers/daily-data'
 import { addresses } from '../../config/addresses'
 
 /**
@@ -10,6 +12,7 @@ export function handleEpochRun(event: EpochRun): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.lastRunEpoch = event.params.epoch.toI32()
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -32,6 +35,7 @@ export function handleEpochLengthUpdate(event: EpochLengthUpdate): void {
 
     createEpoch((addresses.isL1 ? event.block.number : graphNetwork.currentL1BlockNumber!).toI32(), graphNetwork.epochLength, graphNetwork.currentEpoch)
     // return here so it doesn't run the normal handler
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
     return
   }
 
@@ -52,6 +56,7 @@ export function handleEpochLengthUpdate(event: EpochLengthUpdate): void {
   graphNetwork.lastLengthUpdateEpoch = event.params.epoch.toI32()
   graphNetwork.lastLengthUpdateBlock = epoch.startBlock
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 // export function handleImplementationUpdated(event: ImplementationUpdated): void {

@@ -1,5 +1,5 @@
 import { Address, BigDecimal, BigInt, ByteArray } from '@graphprotocol/graph-ts'
-import { Allocation, Dispute, Attestation } from '../types/schema'
+import { Allocation, Dispute, Attestation, GraphNetwork } from '../types/schema'
 import {
   ParameterUpdated,
   QueryDisputeCreated,
@@ -12,6 +12,7 @@ import {
 } from '../types/DisputeManager/DisputeManager'
 import { DisputeManagerStitched } from '../types/DisputeManager/DisputeManagerStitched'
 import { createOrLoadGraphNetwork } from './helpers/helpers'
+import { getAndUpdateGraphNetworkDailyData } from './helpers/daily-data'
 
 const BIGINT_ZERO = BigInt.fromI32(0)
 
@@ -200,4 +201,5 @@ export function handleParameterUpdated(event: ParameterUpdated): void {
     graphNetwork.fishermanRewardPercentage = disputeManager.fishermanRewardPercentage().toI32()
   }
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }

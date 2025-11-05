@@ -3,10 +3,11 @@ import {
   DepositInitiated,
   TokensMintedFromL2,
 } from '../types/L1GraphTokenGateway/L1GraphTokenGateway'
-import { BridgeWithdrawalTransaction, BridgeDepositTransaction } from '../types/schema'
+import { BridgeWithdrawalTransaction, BridgeDepositTransaction, GraphNetwork } from '../types/schema'
 import { getRetryableTicketId, getTransactionIndex } from './helpers/bridge'
 import { getDataFromEventLog } from './helpers/event-log'
 import { createOrLoadGraphNetwork } from './helpers/helpers'
+import { getAndUpdateGraphNetworkDailyData } from './helpers/daily-data'
 
 export function handleWithdrawalFinalized(event: WithdrawalFinalized): void {
   // Update total GRT withdrawn confirmed
@@ -15,6 +16,7 @@ export function handleWithdrawalFinalized(event: WithdrawalFinalized): void {
     event.params.amount,
   )
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 
   // Save withdrawal data
   let entity = new BridgeWithdrawalTransaction(
@@ -40,6 +42,7 @@ export function handleDepositInitiated(event: DepositInitiated): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.totalGRTDeposited = graphNetwork.totalGRTDeposited.plus(event.params.amount)
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 
   // Save deposit data
   let entity = new BridgeDepositTransaction(
@@ -70,4 +73,5 @@ export function handleTokensMintedFromL2 (event: TokensMintedFromL2): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.totalGRTMintedFromL2 = graphNetwork.totalGRTMintedFromL2.plus(event.params.amount)
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }

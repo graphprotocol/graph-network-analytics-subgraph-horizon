@@ -1,8 +1,16 @@
 import { BigInt } from '@graphprotocol/graph-ts'
 import { addresses } from '../../config/addresses'
 import { AllowedLockedVerifierSet, DelegatedTokensWithdrawn, DelegationFeeCutSet, DelegationSlashed, DelegationSlashingEnabled, HorizonStakeDeposited, HorizonStakeLocked, HorizonStakeWithdrawn, MaxThawingPeriodSet, OperatorSet, StakeDelegatedWithdrawn, ThawingPeriodCleared, TokensDelegated, TokensDeprovisioned, TokensToDelegationPoolAdded, TokensUndelegated } from '../types/HorizonStaking/HorizonStaking'
-import { DelegatedStake, Delegator, Indexer, Provision, ThawRequest } from '../types/schema'
+import { DataService, DelegatedStake, Delegator, GraphNetwork, Indexer, Provision, ThawRequest } from '../types/schema'
 import { createOrLoadDataService, createOrLoadDelegatedStakeForProvision, createOrLoadDelegator, createOrLoadEpoch, createOrLoadGraphAccount, createOrLoadGraphNetwork, createOrLoadHorizonOperator, createOrLoadIndexer, createOrLoadProvision, joinID, updateAdvancedIndexerMetrics, updateAdvancedProvisionMetrics, updateDelegationExchangeRate, updateDelegationExchangeRateForProvision } from './helpers/helpers'
+import {
+  getAndUpdateGraphNetworkDailyData,
+  getAndUpdateIndexerDailyData,
+  getAndUpdateDelegatorDailyData,
+  getAndUpdateDelegatedStakeDailyData,
+  getAndUpdateProvisionDailyData,
+  getAndUpdateDataServiceDailyData,
+} from './helpers/daily-data'
 import {
     ProvisionCreated,
     ProvisionIncreased,
@@ -32,10 +40,13 @@ export function handleHorizonStakeDeposited(event: HorizonStakeDeposited): void 
     // Update epoch
     let epoch = createOrLoadEpoch(
         addresses.isL1 ? event.block.number : graphNetwork.currentL1BlockNumber!,
-        graphNetwork
-    )
+    graphNetwork
+)
     epoch.stakeDeposited = epoch.stakeDeposited.plus(event.params.tokens)
     epoch.save()
+
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleHorizonStakeLocked(event: HorizonStakeLocked): void {
@@ -52,6 +63,9 @@ export function handleHorizonStakeLocked(event: HorizonStakeLocked): void {
         event.params.tokens,
     )
     graphNetwork.save()
+
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleHorizonStakeWithdrawn(event: HorizonStakeWithdrawn): void {
@@ -75,6 +89,9 @@ export function handleHorizonStakeWithdrawn(event: HorizonStakeWithdrawn): void 
         graphNetwork.stakedIndexersCount = graphNetwork.stakedIndexersCount - 1
     }
     graphNetwork.save()
+
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleProvisionCreated(event: ProvisionCreated): void {
@@ -98,6 +115,11 @@ export function handleProvisionCreated(event: ProvisionCreated): void {
     provision.thawingPeriod = event.params.thawingPeriod
     provision.thawingPeriodPending = event.params.thawingPeriod
     provision.save()
+
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleProvisionIncreased(event: ProvisionIncreased): void {
@@ -117,6 +139,11 @@ export function handleProvisionIncreased(event: ProvisionIncreased): void {
 
     provision.tokensProvisioned = provision.tokensProvisioned.plus(event.params.tokens)
     provision.save()
+
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleProvisionThawed(event: ProvisionThawed): void {
@@ -136,6 +163,11 @@ export function handleProvisionThawed(event: ProvisionThawed): void {
 
     provision.tokensThawing = provision.tokensThawing.plus(event.params.tokens)
     provision.save()
+
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleTokensDeprovisioned(event: TokensDeprovisioned): void {
@@ -159,6 +191,11 @@ export function handleTokensDeprovisioned(event: TokensDeprovisioned): void {
     provision.tokensProvisioned = provision.tokensProvisioned.minus(event.params.tokens)
     provision.tokensThawing = provision.tokensThawing.minus(event.params.tokens)
     provision.save()
+
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleProvisionParametersSet(event: ProvisionParametersSet): void {
@@ -166,6 +203,8 @@ export function handleProvisionParametersSet(event: ProvisionParametersSet): voi
     provision.thawingPeriod = event.params.thawingPeriod
     provision.maxVerifierCut = event.params.maxVerifierCut
     provision.save()
+
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
 }
 
 export function handleProvisionParametersStaged(event: ProvisionParametersStaged): void {
@@ -173,6 +212,8 @@ export function handleProvisionParametersStaged(event: ProvisionParametersStaged
     provision.thawingPeriodPending = event.params.thawingPeriod
     provision.maxVerifierCutPending = event.params.maxVerifierCut
     provision.save()
+
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
 }
 
 export function handleOperatorSet(event: OperatorSet): void {
@@ -232,8 +273,11 @@ export function handleDelegationFeeCutSet(event: DelegationFeeCutSet): void {
     let indexer = Indexer.load(event.params.serviceProvider.toHexString())!
     indexer.indexingRewardCut = event.params.paymentType == 2 ? invertedCut.toI32() : indexer.indexingRewardCut
     indexer.queryFeeCut = event.params.paymentType == 0 ? invertedCut.toI32() : indexer.queryFeeCut
-    indexer = updateAdvancedIndexerMetrics(indexer as Indexer)
+   indexer = updateAdvancedIndexerMetrics(indexer as Indexer)
     indexer.save()
+
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
 }
 
 export function handleProvisionSlashed(event: ProvisionSlashed): void {
@@ -258,6 +302,11 @@ export function handleProvisionSlashed(event: ProvisionSlashed): void {
     // To DO, update thawing tokens according to the accounting calculation from the contract
     provision.tokensSlashedServiceProvider = provision.tokensSlashedServiceProvider.plus(event.params.tokens)
     provision.save()
+
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleThawRequestCreated(event: ThawRequestCreated): void {
@@ -301,6 +350,9 @@ export function handleThawRequestCreated(event: ThawRequestCreated): void {
           ? event.params.thawingUntil
           : indexer.thawingUntil
       indexer.save()
+
+      getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+      getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
     } else {
       // update delegated stake for delegation thaw request
       let delegatedStake = createOrLoadDelegatedStakeForProvision(
@@ -315,6 +367,8 @@ export function handleThawRequestCreated(event: ThawRequestCreated): void {
           ? event.params.thawingUntil.toI32()
           : delegatedStake.lockedUntil
       delegatedStake.save()
+
+      getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
     }
 }
 
@@ -350,6 +404,11 @@ export function handleTokensToDelegationPoolAdded(event: TokensToDelegationPoolA
     let dataService = createOrLoadDataService(event.params.verifier)
     dataService.totalTokensDelegated = dataService.totalTokensDelegated.plus(event.params.tokens)
     dataService.save()
+
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
 }
 
 // Delegation
@@ -426,13 +485,20 @@ export function handleTokensDelegated(event: TokensDelegated): void {
         graphNetwork.activeDelegationCount = graphNetwork.activeDelegationCount + 1
         delegator.activeStakesCount = delegator.activeStakesCount + 1
         // Is delegator becoming active because of the stake becoming active?
-        if (delegator.activeStakesCount == 1) {
-            graphNetwork.activeDelegatorCount = graphNetwork.activeDelegatorCount + 1
-        }
+    if (delegator.activeStakesCount == 1) {
+        graphNetwork.activeDelegatorCount = graphNetwork.activeDelegatorCount + 1
     }
+}
 
-    graphNetwork.save()
-    delegator.save()
+graphNetwork.save()
+delegator.save()
+
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
+    getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
+    getAndUpdateDelegatorDailyData(delegator as Delegator, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleDelegationSlashed(event: DelegationSlashed): void {
@@ -458,6 +524,10 @@ export function handleDelegationSlashed(event: DelegationSlashed): void {
     let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
     graphNetwork.totalDelegatedTokens = graphNetwork.totalDelegatedTokens.minus(event.params.tokens)
     graphNetwork.save()
+
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleTokensUndelegated(event: TokensUndelegated): void {
@@ -529,6 +599,13 @@ export function handleTokensUndelegated(event: TokensUndelegated): void {
     let dataService = createOrLoadDataService(event.params.verifier)
     dataService.totalTokensDelegated = dataService.totalTokensDelegated.minus(event.params.tokens)
     dataService.save()
+
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
+    getAndUpdateDelegatorDailyData(delegator as Delegator, event.block.timestamp)
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
 }
 
 export function handleDelegatedTokensWithdrawn(event: DelegatedTokensWithdrawn): void {
@@ -542,28 +619,39 @@ export function handleDelegatedTokensWithdrawn(event: DelegatedTokensWithdrawn):
     let delegatedStake = DelegatedStake.load(id)!
     delegatedStake.lockedTokens = delegatedStake.lockedTokens.minus(event.params.tokens)
     delegatedStake.save()
+
+    getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+    getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
 }
 
 export function handleMaxThawingPeriodSet(event: MaxThawingPeriodSet): void {
     let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
     graphNetwork.maxThawingPeriod = event.params.maxThawingPeriod
     graphNetwork.save()
+
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleThawingPeriodCleared(event: ThawingPeriodCleared): void {
     let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
     graphNetwork.thawingPeriod = 0
     graphNetwork.save()
+
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleDelegationSlashingEnabled(event: DelegationSlashingEnabled): void {
     let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
     graphNetwork.delegationSlashingEnabled = true
     graphNetwork.save()
+
+    getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleAllowedLockedVerifierSet(event: AllowedLockedVerifierSet): void {
     let dataService = createOrLoadDataService(event.params.verifier)
     dataService.allowedWithTokenLockWallets = event.params.allowed
     dataService.save()
+
+    getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
 }

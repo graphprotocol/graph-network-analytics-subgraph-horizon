@@ -41,6 +41,7 @@ import {
   GraphAccount,
   NameSignalSubgraphRelation,
   NameSignal,
+  GraphNetwork,
 } from '../types/schema'
 
 import { zeroBD } from './utils'
@@ -58,6 +59,10 @@ import {
   convertBigIntSubgraphIDToBase58,
   createOrLoadGraphNetwork
 } from './helpers/helpers'
+import {
+  getAndUpdateGraphNetworkDailyData,
+  getAndUpdateSubgraphDeploymentDailyData,
+} from './helpers/daily-data'
 import { addresses } from '../../config/addresses'
 
 export function handleSetDefaultName(event: SetDefaultName): void {
@@ -255,6 +260,14 @@ export function handleSubgraphPublished(event: SubgraphPublished): void {
   }
   // create deployment - named subgraph relationship, and update the old one
   updateCurrentDeploymentLinks(oldDeployment, deployment, subgraph as Subgraph)
+
+  if (oldDeployment != null) {
+    getAndUpdateSubgraphDeploymentDailyData(
+      oldDeployment as SubgraphDeployment,
+      event.block.timestamp,
+    )
+  }
+  getAndUpdateSubgraphDeploymentDailyData(deployment, event.block.timestamp)
 }
 /**
  * @dev handleSubgraphDeprecated
@@ -274,12 +287,21 @@ export function handleSubgraphDeprecated(event: SubgraphDeprecated): void {
   graphNetwork.activeSubgraphCount = graphNetwork.activeSubgraphCount - 1
   graphNetwork.save()
 
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
+
   if (subgraph.currentVersion != null) {
     let version = SubgraphVersion.load(subgraph.currentVersion!)
     if (version != null) {
       let deployment = SubgraphDeployment.load(version.subgraphDeployment)
 
       updateCurrentDeploymentLinks(deployment, null, subgraph as Subgraph, true)
+
+      if (deployment != null) {
+        getAndUpdateSubgraphDeploymentDailyData(
+          deployment as SubgraphDeployment,
+          event.block.timestamp,
+        )
+      }
     }
   }
 }
@@ -385,6 +407,7 @@ export function handleNSignalMinted(event: NSignalMinted): void {
       let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
       graphNetwork.activeCuratorCount = graphNetwork.activeCuratorCount + 1
       graphNetwork.save()
+      getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
     }
   }
   curator.save()
@@ -494,6 +517,7 @@ export function handleNSignalBurned(event: NSignalBurned): void {
       let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
       graphNetwork.activeCuratorCount = graphNetwork.activeCuratorCount - 1
       graphNetwork.save()
+      getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
     }
   }
 
@@ -683,6 +707,14 @@ export function handleSubgraphPublishedV2(event: SubgraphPublished1): void {
   }
   // create deployment - named subgraph relationship, and update the old one
   updateCurrentDeploymentLinks(oldDeployment, deployment, subgraph as Subgraph)
+
+  if (oldDeployment != null) {
+    getAndUpdateSubgraphDeploymentDailyData(
+      oldDeployment as SubgraphDeployment,
+      event.block.timestamp,
+    )
+  }
+  getAndUpdateSubgraphDeploymentDailyData(deployment, event.block.timestamp)
 }
 
 // - event: SubgraphDeprecated(indexed uint256,uint256)
@@ -702,6 +734,7 @@ export function handleSubgraphDeprecatedV2(event: SubgraphDeprecated1): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.activeSubgraphCount = graphNetwork.activeSubgraphCount - 1
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 
   if (subgraph.currentVersion != null) {
     let version = SubgraphVersion.load(subgraph.currentVersion!)
@@ -709,6 +742,13 @@ export function handleSubgraphDeprecatedV2(event: SubgraphDeprecated1): void {
       let deployment = SubgraphDeployment.load(version.subgraphDeployment)
 
       updateCurrentDeploymentLinks(deployment, null, subgraph as Subgraph, true)
+
+      if (deployment != null) {
+        getAndUpdateSubgraphDeploymentDailyData(
+          deployment as SubgraphDeployment,
+          event.block.timestamp,
+        )
+      }
     }
   }
 }
@@ -830,6 +870,7 @@ export function handleNSignalMintedV2(event: SignalMinted): void {
       let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
       graphNetwork.activeCuratorCount = graphNetwork.activeCuratorCount + 1
       graphNetwork.save()
+      getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
     }
   }
   curator.save()
@@ -941,6 +982,7 @@ export function handleNSignalBurnedV2(event: SignalBurned): void {
       let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
       graphNetwork.activeCuratorCount = graphNetwork.activeCuratorCount - 1
       graphNetwork.save()
+      getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
     }
   }
 
@@ -1134,6 +1176,13 @@ export function handleSubgraphVersionUpdated(event: SubgraphVersionUpdated): voi
     }
     // create deployment - named subgraph relationship, and update the old one
     updateCurrentDeploymentLinks(oldDeployment, deployment, subgraph as Subgraph)
+    if (oldDeployment != null) {
+      getAndUpdateSubgraphDeploymentDailyData(
+        oldDeployment as SubgraphDeployment,
+        event.block.timestamp,
+      )
+    }
+    getAndUpdateSubgraphDeploymentDailyData(deployment, event.block.timestamp)
     subgraphVersion.save()
 
     let context = new DataSourceContext()

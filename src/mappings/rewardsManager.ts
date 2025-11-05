@@ -1,5 +1,5 @@
 import { Address, BigInt } from '@graphprotocol/graph-ts'
-import { Indexer, Allocation, SubgraphDeployment } from '../types/schema'
+import { Indexer, Allocation, SubgraphDeployment, GraphNetwork } from '../types/schema'
 import {
   RewardsAssigned,
   ParameterUpdated,
@@ -13,6 +13,11 @@ import {
   updateDelegationExchangeRate,
   createOrLoadGraphNetwork
 } from './helpers/helpers'
+import {
+  getAndUpdateGraphNetworkDailyData,
+  getAndUpdateIndexerDailyData,
+  getAndUpdateSubgraphDeploymentDailyData,
+} from './helpers/daily-data'
 import { addresses } from '../../config/addresses'
 
 export function handleRewardsAssigned(event: RewardsAssigned): void {
@@ -87,6 +92,10 @@ export function handleRewardsAssigned(event: RewardsAssigned): void {
   )
   graphNetwork.totalDelegatedTokens = graphNetwork.totalDelegatedTokens.plus(delegatorIndexingRewards)
   graphNetwork.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateSubgraphDeploymentDailyData(subgraphDeployment as SubgraphDeployment, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -106,6 +115,8 @@ export function handleParameterUpdated(event: ParameterUpdated): void {
     graphNetwork.subgraphAvailabilityOracle = rewardsManager.subgraphAvailabilityOracle()
   }
   graphNetwork.save()
+
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 // export function handleImplementationUpdated(event: ImplementationUpdated): void {
@@ -125,6 +136,8 @@ export function handleRewardsDenyListUpdated(event: RewardsDenylistUpdated): voi
       subgraphDeployment.deniedAt = event.params.sinceBlock.toI32()
     }
     subgraphDeployment.save()
+
+    getAndUpdateSubgraphDeploymentDailyData(subgraphDeployment as SubgraphDeployment, event.block.timestamp)
   }
   // We might need to handle the case where the subgraph deployment doesn't exists later
 }

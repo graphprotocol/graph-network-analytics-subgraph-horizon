@@ -1,5 +1,7 @@
 import { Approval, Transfer, GraphToken } from '../types/GraphToken/GraphToken'
+import { GraphNetwork } from '../types/schema'
 import { createOrLoadGraphAccount, createOrLoadGraphNetwork } from './helpers/helpers'
+import { getAndUpdateGraphNetworkDailyData } from './helpers/daily-data'
 
 /**
  * @dev handleTransfer
@@ -56,6 +58,8 @@ export function handleTransfer(event: Transfer): void {
 
   userTo.save()
   userFrom.save()
+
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleApproval(event: Approval): void {

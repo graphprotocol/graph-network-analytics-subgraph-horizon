@@ -1,6 +1,7 @@
 import { DepositFinalized, WithdrawalInitiated } from '../types/L2GraphTokenGateway/L2GraphTokenGateway'
 import { createOrLoadGraphNetwork } from './helpers/helpers'
-import { BridgeDepositTransaction, BridgeWithdrawalTransaction, RetryableTicketRedeemAttempt } from '../types/schema'
+import { BridgeDepositTransaction, BridgeWithdrawalTransaction, RetryableTicketRedeemAttempt, GraphNetwork } from '../types/schema'
+import { getAndUpdateGraphNetworkDailyData } from './helpers/daily-data'
 import { getDataFromEventLog } from './helpers/event-log'
 
 export function handleWithdrawalInitiated(event: WithdrawalInitiated): void {
@@ -8,6 +9,7 @@ export function handleWithdrawalInitiated(event: WithdrawalInitiated): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.totalGRTWithdrawn = graphNetwork.totalGRTWithdrawn.plus(event.params.amount)
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 
   // Save withdrawal data
   let entity = new BridgeWithdrawalTransaction(
@@ -39,6 +41,7 @@ export function handleDepositFinalized(event: DepositFinalized): void {
     event.params.amount
   );
   graphNetwork.save();
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 
   // Save bridge deposit data
   let entity = new BridgeDepositTransaction(

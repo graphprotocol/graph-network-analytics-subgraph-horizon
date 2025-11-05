@@ -6,7 +6,9 @@ import {
   NewPauseGuardian,
 } from '../types/Controller/Controller'
 
+import { GraphNetwork } from '../types/schema'
 import { createOrLoadGraphNetwork } from './helpers/helpers'
+import { getAndUpdateGraphNetworkDailyData } from './helpers/daily-data'
 
 /**
  * @dev handleSetContractProxy
@@ -40,6 +42,7 @@ export function handleSetContractProxy(event: SetContractProxy): void {
     graphNetwork.graphToken = event.params.contractAddress
   }
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -50,6 +53,7 @@ export function handleNewOwnership(event: NewOwnership): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.governor = event.params.to
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -60,6 +64,7 @@ export function handlePartialPauseChanged(event: PartialPauseChanged): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.isPartialPaused = event.params.isPaused
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -70,6 +75,7 @@ export function handlePauseChanged(event: PauseChanged): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.isPaused = event.params.isPaused
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -80,4 +86,5 @@ export function handleNewPauseGuardian(event: NewPauseGuardian): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.pauseGuardian = event.params.pauseGuardian
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }

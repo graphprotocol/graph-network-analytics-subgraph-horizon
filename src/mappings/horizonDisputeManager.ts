@@ -1,5 +1,5 @@
 import { Address, BigDecimal, BigInt, ByteArray, log } from '@graphprotocol/graph-ts'
-import { Allocation, Dispute, Attestation } from '../types/schema'
+import { Allocation, Dispute, Attestation, GraphNetwork } from '../types/schema'
 import {
   QueryDisputeCreated,
   IndexingDisputeCreated,
@@ -15,6 +15,7 @@ import {
   LegacyDisputeCreated,
 } from '../types/HorizonDisputeManager/HorizonDisputeManager'
 import { createOrLoadGraphNetwork } from './helpers/helpers'
+import { getAndUpdateGraphNetworkDailyData } from './helpers/daily-data'
 
 // Define constants locally
 const BIGINT_ZERO = BigInt.fromI32(0)
@@ -205,6 +206,7 @@ export function handleArbitratorSet(event: ArbitratorSet): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.arbitrator = event.params.arbitrator
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 // Handles FishermanRewardCutSet events
@@ -212,6 +214,7 @@ export function handleFishermanRewardCutSet(event: FishermanRewardCutSet): void 
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.fishermanRewardCut = event.params.fishermanRewardCut.toI32()
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 // Handles MaxSlashingCutSet events
@@ -219,6 +222,7 @@ export function handleMaxSlashingCutSet(event: MaxSlashingCutSet): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.maxSlashingCut = event.params.maxSlashingCut.toI32()
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 // Handles DisputePeriodSet events
@@ -226,5 +230,5 @@ export function handleDisputePeriodSet(event: DisputePeriodSet): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.disputePeriod = event.params.disputePeriod
   graphNetwork.save()
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
-

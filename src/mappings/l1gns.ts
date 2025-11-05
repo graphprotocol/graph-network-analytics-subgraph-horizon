@@ -1,7 +1,7 @@
 import { BigDecimal, BigInt, log } from '@graphprotocol/graph-ts'
 import { SubgraphSentToL2, CuratorBalanceSentToL2 } from '../types/L1GNS/L1GNS'
 
-import { Subgraph, NameSignal, SubgraphVersion, SubgraphDeployment } from '../types/schema'
+import { Subgraph, NameSignal, SubgraphVersion, SubgraphDeployment, GraphNetwork } from '../types/schema'
 
 import {
   joinID,
@@ -9,6 +9,10 @@ import {
   getAliasedL2SubgraphID,
   createOrLoadGraphNetwork,
 } from './helpers/helpers'
+import {
+  getAndUpdateGraphNetworkDailyData,
+  getAndUpdateSubgraphDeploymentDailyData,
+} from './helpers/daily-data'
 
 /*
     event SubgraphSentToL2(
@@ -76,6 +80,9 @@ export function handleSubgraphSentToL2(event: SubgraphSentToL2): void {
   graphNetwork.totalTokensSignalledAutoMigrate = graphNetwork.totalTokensSignalledAutoMigrate.minus(event.params._tokens.toBigDecimal())
   graphNetwork.totalSignalledTokensTransferredToL2 = graphNetwork.totalSignalledTokensTransferredToL2.plus(event.params._tokens)
   graphNetwork.save()
+
+  getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /*
@@ -127,4 +134,7 @@ export function handleCuratorBalanceSentToL2(event: CuratorBalanceSentToL2): voi
   graphNetwork.totalTokensSignalledAutoMigrate = graphNetwork.totalTokensSignalledAutoMigrate.minus(event.params._tokens.toBigDecimal())
   graphNetwork.totalSignalledTokensTransferredToL2 = graphNetwork.totalSignalledTokensTransferredToL2.plus(event.params._tokens)
   graphNetwork.save()
+
+  getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }

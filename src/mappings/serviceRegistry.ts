@@ -2,6 +2,7 @@ import { ServiceRegistered, ServiceUnregistered } from '../types/ServiceRegistry
 import { Indexer } from '../types/schema'
 
 import { createOrLoadLegacyIndexer, createOrLoadGraphAccount } from './helpers/helpers'
+import { getAndUpdateIndexerDailyData } from './helpers/daily-data'
 
 /**
  * @dev handleServiceRegistered
@@ -15,6 +16,8 @@ export function handleServiceRegistered(event: ServiceRegistered): void {
   indexer.url = event.params.url
   indexer.geoHash = event.params.geohash
   indexer.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
 }
 
 /**
@@ -27,4 +30,6 @@ export function handleServiceUnregistered(event: ServiceUnregistered): void {
   indexer.url = null
   indexer.geoHash = null
   indexer.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
 }

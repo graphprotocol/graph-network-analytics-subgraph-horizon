@@ -13,6 +13,7 @@ import {
   createOrLoadGraphAccount,
   convertBigIntSubgraphIDToBase58,
 } from './helpers/helpers'
+import { getAndUpdateSubgraphDeploymentDailyData } from './helpers/daily-data'
 
 /*
     event SubgraphReceivedFromL1(
@@ -80,6 +81,8 @@ export function handleSubgraphL2TransferFinalized(event: SubgraphL2TransferFinal
   deployment.transferredToL2AtTx = event.transaction.hash.toHexString()
   deployment.signalledTokensReceivedOnL2 = subgraph.signalledTokensReceivedOnL2
   deployment.save()
+
+  getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
 }
 
 /// @dev Emitted when the L1 balance for a curator has been claimed
@@ -116,6 +119,8 @@ export function handleCuratorBalanceReceived(event: CuratorBalanceReceived): voi
     event.params._tokens,
   )
   deployment.save()
+
+  getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
 }
 
 /// @dev Emitted when the L1 balance for a curator has been returned to the beneficiary.

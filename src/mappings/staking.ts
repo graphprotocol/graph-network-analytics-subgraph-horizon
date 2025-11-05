@@ -25,6 +25,7 @@ import {
   Allocation,
   Pool,
   SubgraphDeployment,
+  GraphNetwork,
   GraphAccount,
   Delegator,
   DelegatedStake,
@@ -49,6 +50,15 @@ import {
   createOrLoadIndexerQueryFeePaymentAggregation,
   createOrLoadPaymentSource,
 } from './helpers/helpers'
+import {
+  getAndUpdateGraphNetworkDailyData,
+  getAndUpdateIndexerDailyData,
+  getAndUpdateDelegatorDailyData,
+  getAndUpdateDelegatedStakeDailyData,
+  getAndUpdateSubgraphDeploymentDailyData,
+  getAndUpdateProvisionDailyData,
+  getAndUpdateDataServiceDailyData,
+} from './helpers/daily-data'
 import { addresses } from '../../config/addresses'
 
 export function handleDelegationParametersUpdated(event: DelegationParametersUpdated): void {
@@ -62,6 +72,9 @@ export function handleDelegationParametersUpdated(event: DelegationParametersUpd
   ).toI32()
   indexer = updateLegacyAdvancedIndexerMetrics(indexer as Indexer)
   indexer.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -94,6 +107,9 @@ export function handleStakeDeposited(event: StakeDeposited): void {
   )
   epoch.stakeDeposited = epoch.stakeDeposited.plus(event.params.tokens)
   epoch.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -124,6 +140,9 @@ export function handleStakeLocked(event: StakeLocked): void {
     graphNetwork.stakedIndexersCount = graphNetwork.stakedIndexersCount - 1
   }
   graphNetwork.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -152,6 +171,9 @@ export function handleStakeWithdrawn(event: StakeWithdrawn): void {
     event.params.tokens,
   )
   graphNetwork.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -200,6 +222,9 @@ export function handleStakeSlashed(event: StakeSlashed): void {
   // Update graph network
   graphNetwork.totalTokensStaked = graphNetwork.totalTokensStaked.minus(slashedTokens)
   graphNetwork.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleStakeDelegated(event: StakeDelegated): void {
@@ -268,6 +293,16 @@ export function handleStakeDelegated(event: StakeDelegated): void {
 
   graphNetwork.save()
   delegator.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
+  getAndUpdateDelegatorDailyData(delegator as Delegator, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
+  getAndUpdateDelegatorDailyData(delegator as Delegator, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleStakeDelegatedLocked(event: StakeDelegatedLocked): void {
@@ -341,6 +376,8 @@ export function handleStakeDelegatedWithdrawn(event: StakeDelegatedWithdrawn): v
   delegatedStake.lockedUntil = 0
   delegatedStake.legacyLockedUntil = 0
   delegatedStake.save()
+
+  getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
 }
 
 /**
@@ -410,6 +447,10 @@ export function handleAllocationCreated(event: AllocationCreated): void {
   allocation.queryFeeEffectiveCutAtStart = indexer.legacyQueryFeeEffectiveCut
   allocation.isLegacy = true
   allocation.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
+  getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
 }
 
 /**
@@ -512,6 +553,10 @@ export function handleAllocationCollected(event: AllocationCollected): void {
     event.params.rebateFees,
   )
   paymentSource.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -575,6 +620,14 @@ export function handleAllocationClosed(event: AllocationClosed): void {
   graphNetwork.activeAllocationCount = graphNetwork.activeAllocationCount - 1
   graphNetwork.totalTokensAllocated = graphNetwork.totalTokensAllocated.minus(event.params.tokens)
   graphNetwork.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -718,6 +771,10 @@ export function handleRebateClaimed(event: RebateClaimed): void {
   )
   graphNetwork.totalDelegatedTokens = graphNetwork.totalDelegatedTokens.plus(event.params.delegationFees)
   graphNetwork.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateSubgraphDeploymentDailyData(subgraphDeployment as SubgraphDeployment, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -835,6 +892,10 @@ export function handleRebateCollected(event: RebateCollected): void {
     event.params.delegationRewards.plus(event.params.queryRebates),
   )
   paymentSource.save()
+
+  getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+  getAndUpdateSubgraphDeploymentDailyData(deployment as SubgraphDeployment, event.block.timestamp)
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 /**
@@ -885,6 +946,8 @@ export function handleParameterUpdated(event: ParameterUpdated): void {
     graphNetwork.delegationTaxPercentage = staking.delegationTaxPercentage().toI32()
   }
   graphNetwork.save()
+
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleSetOperator(event: SetOperator): void {
@@ -933,6 +996,8 @@ export function handleSlasherUpdate(event: SlasherUpdate): void {
   }
   graphNetwork.slashers = slashers
   graphNetwork.save()
+
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 export function handleAssetHolderUpdate(event: AssetHolderUpdate): void {
@@ -960,6 +1025,8 @@ export function handleAssetHolderUpdate(event: AssetHolderUpdate): void {
   }
   graphNetwork.assetHolders = assetHolders
   graphNetwork.save()
+
+  getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
 }
 
 // export function handleImplementationUpdated(event: ImplementationUpdated): void {

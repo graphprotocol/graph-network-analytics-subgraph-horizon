@@ -852,6 +852,9 @@ type Indexer @entity(immutable: false) {
   "[Horizon only] Latest value for thaw request thawingUntil"
   thawingUntil: BigInt!
 
+  "[DEPRECATED] Number of delegators historically associated with this indexer. Retained for compatibility."
+  delegatorsCount: BigInt!
+
   # Provisioning
   provisions: [Provision!]! @derivedFrom(field: "indexer")
 }
@@ -1195,6 +1198,13 @@ type Delegator @entity(immutable: false) {
   "Total realized rewards on all delegated stakes. Realized rewards are added when undelegating and realizing a profit"
   totalRealizedRewards: BigDecimal!
 
+  "[DEPRECATED] Total locked tokens across all stakes. Retained for compatibility."
+  lockedTokens: BigInt!
+  "[DEPRECATED] Total unrealized rewards across all stakes. Retained for compatibility."
+  totalUnrealizedRewards: BigDecimal!
+  "[DEPRECATED] Current delegation across all stakes. Retained for compatibility."
+  currentDelegation: BigDecimal!
+
   "Total DelegatedStake entity count (Active and inactive)"
   stakesCount: Int!
   "Active DelegatedStake entity count. Active means it still has GRT delegated"
@@ -1234,8 +1244,14 @@ type DelegatedStake @entity(immutable: false) {
   shareAmount: BigInt!
   "The rate this delegator paid for their shares (calculated using average cost basis). Used for rewards calculations"
   personalExchangeRate: BigDecimal!
+  "[DEPRECATED] Unrealized rewards for this delegation. Retained for compatibility."
+  unrealizedRewards: BigDecimal!
   "Realized rewards from undelegating and realizing a reward"
   realizedRewards: BigDecimal!
+  "[DEPRECATED] Original delegation value for this stake. Retained for compatibility."
+  originalDelegation: BigDecimal!
+  "[DEPRECATED] Current delegation value for this stake. Retained for compatibility."
+  currentDelegation: BigDecimal!
   "Time this delegator first delegated to an indexer"
   createdAt: Int!
   "Last time this delegator delegated towards this indexer"
@@ -1749,6 +1765,696 @@ type TokenLockWallet @entity(immutable: false) {
   blockNumberCreated: BigInt!
   "The creation tx hash of the wallet"
   txHash: Bytes!
+}
+
+"""
+Analytics daily snapshots
+"""
+type IndexerDailyData @entity(immutable: false) {
+  "<INDEXER ADDRESS>-<DAY NUMBER>"
+  id: Bytes!
+
+  "Timestamp for the start of the day that this entity represents. UTC+0"
+  dayStart: BigInt!
+
+  "Timestamp for the end of the day that this entity represents. UTC+0"
+  dayEnd: BigInt!
+
+  "Number of the day this entity represents. Day 0 is the network launch day."
+  dayNumber: Int!
+
+  "Original entity that this daily data tracks"
+  indexer: Indexer!
+
+  "[CURRENT] Value of stakedTokens for that day"
+  stakedTokens: BigInt!
+
+  "[CURRENT] Value of provisionedTokens for that day"
+  provisionedTokens: BigInt!
+
+  "[CURRENT] Value of thawingTokens for that day"
+  thawingTokens: BigInt!
+
+  "[CURRENT] Value of allocatedTokens for that day"
+  allocatedTokens: BigInt!
+
+  "[CURRENT] Legacy allocated tokens for that day"
+  legacyAllocatedTokens: BigInt!
+
+  "[CURRENT] Value of lockedTokens for that day"
+  lockedTokens: BigInt!
+
+  "[CURRENT] Legacy locked tokens for that day"
+  legacyLockedTokens: BigInt!
+
+  "[CURRENT] Value of unstakedTokens for that day"
+  unstakedTokens: BigInt!
+
+  "[CURRENT] Value of delegatedTokens for that day"
+  delegatedTokens: BigInt!
+
+  "[CURRENT] Value of availableStake for that day"
+  availableStake: BigInt!
+
+  "[CURRENT] Delegated capacity for that day"
+  delegatedCapacity: BigInt!
+
+  "[CURRENT] Token capacity for that day"
+  tokenCapacity: BigInt!
+
+  "[CURRENT] Delegator shares for that day"
+  delegatorShares: BigInt!
+
+  "[CURRENT] Own stake ratio for that day"
+  ownStakeRatio: BigDecimal!
+
+  "[CURRENT] Delegated stake ratio for that day"
+  delegatedStakeRatio: BigDecimal!
+
+  "[CURRENT] Percentage of reward dilution due to overdelegation"
+  overDelegationDilution: BigDecimal!
+
+  "[CURRENT] Exchange rate for shares of the delegation pool for this specific day"
+  delegationExchangeRate: BigDecimal!
+
+  "[CURRENT] Amount of delegated tokens moved that day. Negative means more tokens were undelegated than delegated"
+  netDailyDelegatedTokens: BigInt!
+
+  "[CURRENT] Indexing reward cut in parts per million"
+  indexingRewardCut: Int!
+
+  "[CURRENT] Legacy indexing reward cut in parts per million"
+  legacyIndexingRewardCut: Int!
+
+  "[CURRENT] Indexing reward effective cut"
+  indexingRewardEffectiveCut: BigDecimal!
+
+  "[CURRENT] Legacy indexing reward effective cut"
+  legacyIndexingRewardEffectiveCut: BigDecimal!
+
+  "[CURRENT] Query fee cut in parts per million"
+  queryFeeCut: Int!
+
+  "[CURRENT] Legacy query fee cut in parts per million"
+  legacyQueryFeeCut: Int!
+
+  "[CURRENT] Query fee effective cut"
+  queryFeeEffectiveCut: BigDecimal!
+
+  "[CURRENT] Legacy query fee effective cut"
+  legacyQueryFeeEffectiveCut: BigDecimal!
+
+  "[CURRENT] Percentage of indexer rewards received relative to own stake"
+  indexerRewardsOwnGenerationRatio: BigDecimal!
+
+  "[CURRENT] Legacy percentage of indexer rewards relative to own stake"
+  legacyIndexerRewardsOwnGenerationRatio: BigDecimal!
+
+  "[CURRENT] Delegator parameter cooldown in blocks"
+  delegatorParameterCooldown: Int!
+
+  "[CURRENT] Last delegation parameter update block"
+  lastDelegationParameterUpdate: Int!
+
+  "[CURRENT] Number of forced closures"
+  forcedClosures: Int!
+
+  "[CURRENT] Amount of stake transferred to L2"
+  stakedTokensTransferredToL2: BigInt!
+
+  "[CUMULATIVE] Total amount of query fees collected by the indexer and sent to the rebate pool"
+  queryFeesCollected: BigInt!
+
+  "[CUMULATIVE] Total amount of query fees that the indexer got from rebates"
+  queryFeeRebates: BigInt!
+
+  "[CUMULATIVE] Total amount of query fees that the delegation pool received"
+  delegatorQueryFees: BigInt!
+
+  "[CUMULATIVE] Total amount of indexing rewards generated on this indexer"
+  totalIndexingRewards: BigInt!
+
+  "[CUMULATIVE] Total amount of indexing rewards that the indexer kept"
+  indexerIndexingRewards: BigInt!
+
+  "[CUMULATIVE] Total amount of indexing rewards sent to the delegation pool"
+  delegatorIndexingRewards: BigInt!
+
+  "Number of delegators with stake on the indexer"
+  delegatorsCount: BigInt!
+
+  "[CURRENT] Latest thawing until timestamp for the indexer"
+  thawingUntil: BigInt!
+}
+
+type DelegatorDailyData @entity(immutable: false) {
+  "<DELEGATOR ADDRESS>-<DAY NUMBER>"
+  id: Bytes!
+
+  "Timestamp for the start of the day that this entity represents. UTC+0"
+  dayStart: BigInt!
+
+  "Timestamp for the end of the day that this entity represents. UTC+0"
+  dayEnd: BigInt!
+
+  "Number of the day this entity represents. Day 0 is the network launch day."
+  dayNumber: Int!
+
+  "Original entity that this daily data tracks"
+  delegator: Delegator!
+
+  "[CURRENT] Amount of staked tokens for this day across all stakes"
+  stakedTokens: BigInt!
+
+  "[CURRENT] Amount of unstaked tokens for this day across all stakes"
+  totalUnstakedTokens: BigInt!
+
+  "[DEPRECATED] Amount of locked (undelegating) tokens for this day across all stakes. Retained for compatibility."
+  lockedTokens: BigInt!
+
+  "[DEPRECATED] Aggregation of unrealized rewards across all stakes. Retained for compatibility."
+  totalUnrealizedRewards: BigDecimal!
+
+  "[DEPRECATED] Aggregation of realized rewards across all stakes"
+  totalRealizedRewards: BigDecimal!
+
+  "[DEPRECATED] Current delegation for the delegator across all stakes. Retained for compatibility."
+  currentDelegation: BigDecimal!
+
+  "[CURRENT] Total amount of DelegatedStake entities this Delegator historically had at this point in time"
+  stakesCount: Int!
+
+  "[CURRENT] Amount of active DelegatedStake entities this Delegator had at this point in time"
+  activeStakesCount: Int!
+}
+
+type DelegatedStakeDailyData @entity(immutable: false) {
+  "<DELEGATOR ADDRESS>-<INDEXER OR PROVISION ID>-<DAY NUMBER>"
+  id: Bytes!
+
+  "Timestamp for the start of the day that this entity represents. UTC+0"
+  dayStart: BigInt!
+
+  "Timestamp for the end of the day that this entity represents. UTC+0"
+  dayEnd: BigInt!
+
+  "Number of the day this entity represents. Day 0 is the network launch day."
+  dayNumber: Int!
+
+  "Original entity that this daily data tracks"
+  stake: DelegatedStake!
+
+  "Delegator entity that owns the original entity"
+  delegator: Delegator!
+
+  "Indexer entity where the delegation resides"
+  indexer: Indexer!
+
+  "Provision entity where the delegation resides, if Horizon delegation"
+  provision: Provision
+
+  "Data service for this delegation, if Horizon delegation"
+  dataService: DataService
+
+  "[CURRENT] Amount of staked tokens for this day and this indexer"
+  stakedTokens: BigInt!
+
+  "[CURRENT] Amount of unstaked tokens for this day and this indexer"
+  unstakedTokens: BigInt!
+
+  "[CURRENT] Amount of locked tokens (undelegating) for this day and this indexer"
+  lockedTokens: BigInt!
+
+  "[CURRENT] Legacy locked tokens for this day and this indexer"
+  legacyLockedTokens: BigInt!
+
+  "[CURRENT] Amount of shares for this day and this indexer"
+  shareAmount: BigInt!
+
+  "[CURRENT] Initial exchange rate for this delegator in this indexer at this day. It will increase as an average cost basis if the delegator adds more delegation."
+  personalExchangeRate: BigDecimal!
+
+  "[CURRENT] Latest delegation exchange rate value for the underlying pool"
+  latestIndexerExchangeRate: BigDecimal!
+
+  "[DEPRECATED] Unrealized rewards for the delegator on this particular stake. Retained for compatibility."
+  unrealizedRewards: BigDecimal!
+
+  "[CURRENT] Realized rewards for the delegator on this particular stake"
+  realizedRewards: BigDecimal!
+
+  "[DEPRECATED] Original delegation for the delegator on this particular stake. Retained for compatibility."
+  originalDelegation: BigDecimal!
+
+  "[DEPRECATED] Current delegation for the delegator on this particular stake. Retained for compatibility."
+  currentDelegation: BigDecimal!
+
+  "[CURRENT] Amount of tokens transferred to L2 for this stake"
+  stakedTokensTransferredToL2: BigInt!
+}
+
+type DelegatorDelegatedStakeDailyRelation @entity(immutable: false) {
+  "[DEPRECATED] Auxiliary entity retained for compatibility."
+  id: Bytes!
+
+  "Timestamp for the start of the day that this entity represents. UTC+0"
+  dayStart: BigInt!
+
+  "Timestamp for the end of the day that this entity represents. UTC+0"
+  dayEnd: BigInt!
+
+  "Number of the day this entity represents. Day 0 is the network launch day."
+  dayNumber: Int!
+
+  "Delegator entity that forms the relation."
+  delegator: Delegator!
+
+  "DelegatedStake entity that forms the relation"
+  stake: DelegatedStake!
+
+  "DailyData entity that tracks the Delegator for this specific day"
+  delegatorDailyData: DelegatorDailyData!
+
+  "DailyData entity that tracks the DelegatedStake for this specific day"
+  delegatedStakeDailyData: DelegatedStakeDailyData!
+}
+
+type SubgraphDeploymentDailyData @entity(immutable: false) {
+  "<SUBGRAPH DEPLOYMENT ID>-<DAY NUMBER>"
+  id: Bytes!
+
+  "Timestamp for the start of the day that this entity represents. UTC+0"
+  dayStart: BigInt!
+
+  "Timestamp for the end of the day that this entity represents. UTC+0"
+  dayEnd: BigInt!
+
+  "Number of the day this entity represents. Day 0 is the network launch day."
+  dayNumber: Int!
+
+  "Original entity that the daily data entity tracks"
+  subgraphDeployment: SubgraphDeployment!
+
+  "[CURRENT] Amount of allocated/staked tokens on this deployment at this specific day"
+  stakedTokens: BigInt!
+
+  "[CURRENT] Amount of signalled tokens on this deployment at this specific day"
+  signalledTokens: BigInt!
+
+  "[CURRENT] Amount of unsignalled tokens on this deployment at this specific day"
+  unsignalledTokens: BigInt!
+
+  "[CURRENT] Amount of signal on this deployment at this specific day"
+  signalAmount: BigInt!
+
+  "[CURRENT] Value of pricePerShare for the original entity at this specific day"
+  pricePerShare: BigDecimal!
+
+  "[CURRENT] Total amount received on L2 transfers"
+  signalledTokensReceivedOnL2: BigInt!
+
+  "[CURRENT] Total amount sent to L2 transfers"
+  signalledTokensSentToL2: BigInt!
+
+  "[CURRENT] Number of subgraphs referencing this deployment"
+  subgraphCount: Int!
+
+  "[CURRENT] Number of active subgraphs referencing this deployment"
+  activeSubgraphCount: Int!
+
+  "[CURRENT] Number of deprecated subgraphs referencing this deployment"
+  deprecatedSubgraphCount: Int!
+
+  "[CUMULATIVE] Total rewards accrued all time by this Subgraph Deployment. Includes delegator and indexer rewards"
+  indexingRewardAmount: BigInt!
+
+  "[CUMULATIVE] Total rewards accrued all time by indexers"
+  indexingIndexerRewardAmount: BigInt!
+
+  "[CUMULATIVE] Total rewards accrued all time by delegators"
+  indexingDelegatorRewardAmount: BigInt!
+
+  "[CUMULATIVE] Total query fees earned by this Subgraph Deployment, excluding curator query fees"
+  queryFeesAmount: BigInt!
+
+  "[CUMULATIVE] Total query fee rebates for indexers earned from the protocol, through the rebate mechanism formula."
+  queryFeeRebates: BigInt!
+
+  "[CUMULATIVE] Total query fee rebates for delegators earned from the protocol, through the rebate mechanism formula."
+  delegatorQueryFees: BigInt!
+
+  "[CUMULATIVE] Total curator rewards from fees"
+  curatorFeeRewards: BigInt!
+}
+
+type GraphNetworkDailyData @entity(immutable: false) {
+  "<NETWORK ID>-<DAY NUMBER>"
+  id: Bytes!
+
+  "Timestamp for the start of the day that this entity represents. UTC+0"
+  dayStart: BigInt!
+
+  "Timestamp for the end of the day that this entity represents. UTC+0"
+  dayEnd: BigInt!
+
+  "Number of the day this entity represents. Day 0 is the network launch day."
+  dayNumber: Int!
+
+  "Original entity that the daily data entity tracks"
+  network: GraphNetwork!
+
+  "[CUMULATIVE] Ratio of max staked delegation tokens to indexers stake that earns rewards"
+  delegationRatio: Int!
+
+  # Staking global aggregate values
+  "[CUMULATIVE] The total amount of GRT staked in the staking contract"
+  totalTokensStaked: BigInt!
+
+  "[CUMULATIVE] Total tokens that are currently claimable"
+  totalTokensClaimable: BigInt!
+
+  "[CUMULATIVE] Total tokens that are currently locked or withdrawable in the network from unstaking"
+  totalUnstakedTokensLocked: BigInt!
+
+  "[CUMULATIVE] Total GRT currently in provisions"
+  totalTokensProvisioned: BigInt!
+
+  "[CUMULATIVE] Total GRT currently thawing from provisions"
+  totalTokensThawing: BigInt!
+
+  "[CUMULATIVE] Total GRT currently in allocation"
+  totalTokensAllocated: BigInt!
+
+  "[CUMULATIVE] Total delegated tokens in the protocol"
+  totalDelegatedTokens: BigInt!
+
+  "[CUMULATIVE] Total staked tokens transferred to L2"
+  totalTokensStakedTransferredToL2: BigInt!
+
+  "[CUMULATIVE] Total delegated tokens transferred to L2"
+  totalDelegatedTokensTransferredToL2: BigInt!
+
+  "[CUMULATIVE] Total signalled tokens transferred to L2"
+  totalSignalledTokensTransferredToL2: BigInt!
+
+  # Curation global aggregate values
+  "[CUMULATIVE] The total amount of GRT signalled in the Curation contract"
+  totalTokensSignalled: BigInt!
+
+  "[CUMULATIVE] Total tokens signalled via auto-migrate"
+  totalTokensSignalledAutoMigrate: BigDecimal!
+
+  "[CUMULATIVE] Total tokens signalled directly"
+  totalTokensSignalledDirectly: BigDecimal!
+
+  "[CUMULATIVE] Default reserve ratio for all subgraphs. In parts per million"
+  defaultReserveRatio: Int!
+
+  # Query fees globals
+  "[CUMULATIVE] Total query fees generated in the network"
+  totalQueryFees: BigInt!
+
+  "[CUMULATIVE] Total query fees collected by indexers"
+  totalIndexerQueryFeesCollected: BigInt!
+
+  "[CUMULATIVE] Total query fees rebates claimed by indexers"
+  totalIndexerQueryFeeRebates: BigInt!
+
+  "[CUMULATIVE] Total query fees rebates claimed by delegators"
+  totalDelegatorQueryFeeRebates: BigInt!
+
+  "[CUMULATIVE] Total query fees payed to curators"
+  totalCuratorQueryFees: BigInt!
+
+  "[CUMULATIVE] Total protocol taxes applied to the query fees"
+  totalTaxedQueryFees: BigInt!
+
+  "[CUMULATIVE] Total unclaimed rebates. Includes unclaimed rebates and rebates lost in rebate mechanism "
+  totalUnclaimedQueryFeeRebates: BigInt!
+
+  # Indexing rewards globals
+  "[CUMULATIVE] Total indexing rewards minted"
+  totalIndexingRewards: BigInt!
+
+  "[CUMULATIVE] Total indexing rewards minted to Delegators"
+  totalIndexingDelegatorRewards: BigInt!
+
+  "[CUMULATIVE] Total indexing rewards minted to Indexers"
+  totalIndexingIndexerRewards: BigInt!
+
+  # Issuance
+  "[CURRENT] Network issuance per epoch"
+  networkGRTIssuance: BigInt!
+
+  "[CURRENT] Network issuance per block"
+  networkGRTIssuancePerBlock: BigInt!
+
+  # Supply totals
+  "[CUMULATIVE] Total amount of GRT minted"
+  totalGRTMinted: BigInt!
+
+  "[CUMULATIVE] Total amount of GRT minted from L2 bridge"
+  totalGRTMintedFromL2: BigInt!
+
+  "[CUMULATIVE] Total amount of GRT burned"
+  totalGRTBurned: BigInt!
+
+  "[CURRENT] Total GRT supply"
+  totalSupply: BigInt!
+
+  "[CURRENT] Price of one GRT in USD"
+  GRTinUSD: BigDecimal!
+
+  "[CURRENT] Price of one GRT in ETH"
+  GRTinETH: BigDecimal
+
+  # Bridge totals
+  "[CUMULATIVE] Total amount of GRT deposited to the L1 gateway"
+  totalGRTDeposited: BigInt!
+
+  "[CUMULATIVE] Total amount of GRT deposited to the L1 gateway and redeemed in L2"
+  totalGRTDepositedConfirmed: BigInt!
+
+  "[CUMULATIVE] Total amount of GRT withdrawn from the L2 gateway"
+  totalGRTWithdrawn: BigInt!
+
+  "[CUMULATIVE] Total amount of GRT withdrawn from the L2 gateway and claimed in L1"
+  totalGRTWithdrawnConfirmed: BigInt!
+
+  # Count aggregate values. Note, deprecated subgraphs or inactive users not removed from counts
+  "[CUMULATIVE] Total indexers"
+  indexerCount: Int!
+
+  "[CUMULATIVE] Number of indexers that currently have some stake in the protocol"
+  stakedIndexersCount: Int!
+
+  "[CUMULATIVE] Total delegators"
+  delegatorCount: Int!
+
+  "[CUMULATIVE] Total active delegators"
+  activeDelegatorCount: Int!
+
+  "[CUMULATIVE] Total delegations created"
+  delegationCount: Int!
+
+  "[CUMULATIVE] Total active delegations"
+  activeDelegationCount: Int!
+
+  "[CUMULATIVE] Total curators"
+  curatorCount: Int!
+
+  "[CUMULATIVE] Total active curators"
+  activeCuratorCount: Int!
+
+  "[CUMULATIVE] Total subgraphs"
+  subgraphCount: Int!
+
+  "[CUMULATIVE] Total active subgraphs"
+  activeSubgraphCount: Int!
+
+  "[CUMULATIVE] Total subgraph deployments"
+  subgraphDeploymentCount: Int!
+
+  "[CUMULATIVE] Total epochs ran"
+  epochCount: Int!
+
+  "[CUMULATIVE] Total allocations opened"
+  allocationCount: Int!
+
+  "[CURRENT] Total allocations currently active"
+  activeAllocationCount: Int!
+}
+
+type ProvisionDailyData @entity(immutable: false) {
+  "<PROVISION ID>-<DAY NUMBER>"
+  id: Bytes!
+
+  "Timestamp for the start of the day that this entity represents. UTC+0"
+  dayStart: BigInt!
+
+  "Timestamp for the end of the day that this entity represents. UTC+0"
+  dayEnd: BigInt!
+
+  "Number of the day this entity represents. Day 0 is the network launch day."
+  dayNumber: Int!
+
+  "Original entity that the daily data entity tracks"
+  provision: Provision!
+
+  indexer: Indexer!
+  dataService: DataService!
+
+  "[CURRENT] Tokens provisioned on this provision"
+  tokensProvisioned: BigInt!
+
+  "[CURRENT] Tokens thawing on this provision"
+  tokensThawing: BigInt!
+
+  "[CURRENT] Tokens allocated on this provision"
+  tokensAllocated: BigInt!
+
+  "[CURRENT] Delegated tokens on this provision"
+  delegatedTokens: BigInt!
+
+  "[CURRENT] Delegator shares on this provision"
+  delegatorShares: BigInt!
+
+  "[CURRENT] Delegation exchange rate for this provision"
+  delegationExchangeRate: BigDecimal!
+
+  "[CURRENT] Own stake ratio for this provision"
+  ownStakeRatio: BigDecimal!
+
+  "[CURRENT] Delegated stake ratio for this provision"
+  delegatedStakeRatio: BigDecimal!
+
+  "[CURRENT] Indexer rewards own generation ratio for this provision"
+  indexerRewardsOwnGenerationRatio: BigDecimal!
+
+  "[CURRENT] Query fee effective cut for this provision"
+  queryFeeEffectiveCut: BigDecimal!
+
+  "[CURRENT] Indexing reward effective cut for this provision"
+  indexingRewardEffectiveCut: BigDecimal!
+
+  "[CURRENT] Overdelegation dilution for this provision"
+  overDelegationDilution: BigDecimal!
+
+  "[CURRENT] Allocation count for this provision"
+  allocationCount: Int!
+
+  "[CUMULATIVE] Total allocations historically opened for this provision"
+  totalAllocationCount: BigInt!
+
+  "[CUMULATIVE] Total tokens slashed from the service provider"
+  tokensSlashedServiceProvider: BigInt!
+
+  "[CUMULATIVE] Total tokens slashed from the delegation pool"
+  tokensSlashedDelegationPool: BigInt!
+
+  "[CUMULATIVE] Total query fees collected. Includes the portion given to delegators"
+  queryFeesCollected: BigInt!
+
+  "[CUMULATIVE] Query fee amount collected from the protocol. Does not include portion given to delegators"
+  indexerQueryFees: BigInt!
+
+  "[CUMULATIVE] Query fee amount collected from the protocol for Delegators. Does not include portion taken by the indexer"
+  delegatorQueryFees: BigInt!
+
+  "[CUMULATIVE] Total indexing rewards earned by this provision. Including delegation rewards"
+  rewardsEarned: BigInt!
+
+  "[CUMULATIVE] Total indexing rewards the indexer kept"
+  indexerIndexingRewards: BigInt!
+
+  "[CUMULATIVE] Total indexing rewards given to delegators"
+  delegatorIndexingRewards: BigInt!
+
+  "[CURRENT] Query fee cut in parts per million"
+  queryFeeCut: BigInt!
+
+  "[CURRENT] Indexing fee cut in parts per million"
+  indexingFeeCut: BigInt!
+
+  "[CURRENT] Indexing rewards cut in parts per million"
+  indexingRewardsCut: BigInt!
+
+  "[CURRENT] Max verifier cut in parts per million"
+  maxVerifierCut: BigInt!
+
+  "[CURRENT] Pending max verifier cut in parts per million"
+  maxVerifierCutPending: BigInt!
+
+  "[CURRENT] Thawing period in seconds"
+  thawingPeriod: BigInt!
+
+  "[CURRENT] Pending thawing period in seconds"
+  thawingPeriodPending: BigInt!
+
+  "[CURRENT] Timestamp until thaw request completes"
+  thawingUntil: BigInt!
+}
+
+type DataServiceDailyData @entity(immutable: false) {
+  "<DATA SERVICE ID>-<DAY NUMBER>"
+  id: Bytes!
+
+  "Timestamp for the start of the day that this entity represents. UTC+0"
+  dayStart: BigInt!
+
+  "Timestamp for the end of the day that this entity represents. UTC+0"
+  dayEnd: BigInt!
+
+  "Number of the day this entity represents. Day 0 is the network launch day."
+  dayNumber: Int!
+
+  "Original entity that the daily data entity tracks"
+  dataService: DataService!
+
+  "[CURRENT] Total tokens provisioned for this data service"
+  totalTokensProvisioned: BigInt!
+
+  "[CURRENT] Total tokens thawing for this data service"
+  totalTokensThawing: BigInt!
+
+  "[CURRENT] Total tokens allocated for this data service"
+  totalTokensAllocated: BigInt!
+
+  "[CURRENT] Total tokens delegated to this data service"
+  totalTokensDelegated: BigInt!
+
+  "[CURRENT] Minimum provision tokens for this data service"
+  minimumProvisionTokens: BigInt!
+
+  "[CURRENT] Maximum provision tokens for this data service"
+  maximumProvisionTokens: BigInt!
+
+  "[CURRENT] Minimum verifier cut for this data service"
+  minimumVerifierCut: BigInt!
+
+  "[CURRENT] Maximum verifier cut for this data service"
+  maximumVerifierCut: BigInt!
+
+  "[CURRENT] Minimum thawing period for this data service"
+  minimumThawingPeriod: BigInt!
+
+  "[CURRENT] Maximum thawing period for this data service"
+  maximumThawingPeriod: BigInt!
+
+  "[CURRENT] Delegation ratio for this data service"
+  delegationRatio: Int
+
+  "[CURRENT] Whether this data service is allowed with token lock wallets"
+  allowedWithTokenLockWallets: Boolean!
+
+  "[CURRENT] Curation cut for this data service"
+  curationCut: BigInt!
+
+  "[CURRENT] Max POI staleness for this data service"
+  maxPOIStaleness: BigInt!
+
+  "[CURRENT] Stake to fees ratio for this data service"
+  stakeToFeesRatio: BigInt!
 }
 
 """
