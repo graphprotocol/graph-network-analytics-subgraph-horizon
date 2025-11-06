@@ -163,6 +163,7 @@ export function createOrLoadIndexer(indexerAddress: Bytes, timestamp: BigInt ): 
     indexer.availableStake = BigInt.fromI32(0)
 
     indexer.delegatedTokens = BigInt.fromI32(0)
+    indexer.delegatedThawingTokens = BigInt.fromI32(0)
     indexer.ownStakeRatio = BigDecimal.fromString('0')
     indexer.delegatedStakeRatio = BigDecimal.fromString('0')
     indexer.delegatorShares = BigInt.fromI32(0)
@@ -245,6 +246,7 @@ export function createOrLoadProvision(indexerAddress: Bytes, verifierAddress: By
     provision.indexerQueryFees = BigInt.fromI32(0)
     provision.delegatorQueryFees = BigInt.fromI32(0)
     provision.delegatedTokens = BigInt.fromI32(0)
+    provision.delegatedThawingTokens = BigInt.fromI32(0)
     provision.delegatorShares = BigInt.fromI32(0)
     provision.delegationExchangeRate = BigInt.fromI32(0).toBigDecimal()
     provision.thawingUntil = BigInt.fromI32(0)
@@ -1162,6 +1164,32 @@ export function updateDelegationExchangeRateForProvision(provision: Provision): 
 // TODO - this is broken if we change the delegatio ratio
 // Need to remove, or find a fix
 export function calculateCapacities(indexer: Indexer): Indexer {
+  let graphNetwork = GraphNetwork.load('1')!
+  if (graphNetwork.maxThawingPeriod.gt(BigInt.fromI32(0))) {
+    return calculateCapacitiesHorizon(indexer)
+  } else {
+    return calculateCapacitiesLegacy(indexer)
+  }
+}
+
+export function calculateCapacitiesHorizon(indexer: Indexer): Indexer {
+  let graphNetwork = GraphNetwork.load('1')!
+  let tokensDelegatedMax = indexer.provisionedTokens.times(BigInt.fromI32(graphNetwork.delegationRatio))
+
+  // Eligible to add to the capacity
+  let delegatedTokens = indexer.delegatedTokens.minus(indexer.delegatedThawingTokens)
+  indexer.delegatedCapacity =
+    delegatedTokens < tokensDelegatedMax ? delegatedTokens : tokensDelegatedMax
+
+  indexer.tokenCapacity = indexer.provisionedTokens
+    .minus(indexer.thawingTokens)
+    .plus(indexer.delegatedCapacity)
+  indexer.availableStake = indexer.tokenCapacity
+    .minus(indexer.allocatedTokens)
+  return indexer
+}
+
+export function calculateCapacitiesLegacy(indexer: Indexer): Indexer {
   let graphNetwork = GraphNetwork.load('1')!
   let tokensDelegatedMax = indexer.stakedTokens.times(BigInt.fromI32(graphNetwork.delegationRatio))
 

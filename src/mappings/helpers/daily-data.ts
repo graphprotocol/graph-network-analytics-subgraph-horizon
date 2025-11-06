@@ -147,6 +147,7 @@ export function getAndUpdateIndexerDailyData(
   dailyData.legacyLockedTokens = entity.legacyLockedTokens
   dailyData.unstakedTokens = entity.unstakedTokens
   dailyData.delegatedTokens = entity.delegatedTokens
+  dailyData.delegatedThawingTokens = entity.delegatedThawingTokens
   dailyData.availableStake = entity.availableStake
   dailyData.delegatedCapacity = entity.delegatedCapacity
   dailyData.tokenCapacity = entity.tokenCapacity
@@ -317,6 +318,7 @@ export function getAndUpdateProvisionDailyData(
   dailyData.tokensThawing = entity.tokensThawing
   dailyData.tokensAllocated = entity.tokensAllocated
   dailyData.delegatedTokens = entity.delegatedTokens
+  dailyData.delegatedThawingTokens = entity.delegatedThawingTokens
   dailyData.delegatorShares = entity.delegatorShares
   dailyData.delegationExchangeRate = entity.delegationExchangeRate
   dailyData.ownStakeRatio = entity.ownStakeRatio

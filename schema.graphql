@@ -815,6 +815,8 @@ type Indexer @entity(immutable: false) {
   delegators: [DelegatedStake!]! @derivedFrom(field: "indexer")
   "CURRENT tokens delegated to the indexer"
   delegatedTokens: BigInt!
+  "Tokens delegated that are thawing from the provision"
+  delegatedThawingTokens: BigInt!
   "Ratio between the amount of the indexers own stake over the total usable stake."
   ownStakeRatio: BigDecimal!
   "Ratio between the amount of delegated stake over the total usable stake."
@@ -1001,6 +1003,8 @@ type Provision @entity(immutable: false) {
   # Delegation
   "Tokens delegated to the provision"
   delegatedTokens: BigInt!
+  "Tokens delegated that are thawing from the provision"
+  delegatedThawingTokens: BigInt!
   "Total shares of the delegator pool"
   delegatorShares: BigInt!
   "Exchange rate of tokens received for each share"
@@ -1812,6 +1816,8 @@ type IndexerDailyData @entity(immutable: false) {
 
   "[CURRENT] Value of delegatedTokens for that day"
   delegatedTokens: BigInt!
+  "[CURRENT] Value of delegatedThawingTokens for that day"
+  delegatedThawingTokens: BigInt!
 
   "[CURRENT] Value of availableStake for that day"
   availableStake: BigInt!
@@ -2315,6 +2321,8 @@ type ProvisionDailyData @entity(immutable: false) {
 
   "[CURRENT] Delegated tokens on this provision"
   delegatedTokens: BigInt!
+  "[CURRENT] Delegated tokens thawing on this provision"
+  delegatedThawingTokens: BigInt!
 
   "[CURRENT] Delegator shares on this provision"
   delegatorShares: BigInt!
