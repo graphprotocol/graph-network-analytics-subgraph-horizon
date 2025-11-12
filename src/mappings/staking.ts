@@ -49,6 +49,7 @@ import {
   calculateCapacities,
   createOrLoadIndexerQueryFeePaymentAggregation,
   createOrLoadPaymentSource,
+  loadGraphNetwork,
 } from './helpers/helpers'
 import {
   getAndUpdateGraphNetworkDailyData,
@@ -63,7 +64,7 @@ import { addresses } from '../../config/addresses'
 
 export function handleDelegationParametersUpdated(event: DelegationParametersUpdated): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
-  let indexer = createOrLoadLegacyIndexer(event.params.indexer, event.block.timestamp)
+  let indexer = createOrLoadLegacyIndexer(event.params.indexer, event.block.timestamp, graphNetwork)
   indexer.legacyIndexingRewardCut = event.params.indexingRewardCut.toI32()
   indexer.legacyQueryFeeCut = event.params.queryFeeCut.toI32()
   indexer.delegatorParameterCooldown = event.params.cooldownBlocks.toI32()
@@ -86,7 +87,7 @@ export function handleDelegationParametersUpdated(event: DelegationParametersUpd
 export function handleStakeDeposited(event: StakeDeposited): void {
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   // update indexer
-  let indexer = createOrLoadLegacyIndexer(event.params.indexer, event.block.timestamp)
+  let indexer = createOrLoadLegacyIndexer(event.params.indexer, event.block.timestamp, graphNetwork)
   let previousStake = indexer.stakedTokens
   indexer.stakedTokens = indexer.stakedTokens.plus(event.params.tokens)
   indexer = updateLegacyAdvancedIndexerMetrics(indexer as Indexer)
@@ -228,10 +229,11 @@ export function handleStakeSlashed(event: StakeSlashed): void {
 }
 
 export function handleStakeDelegated(event: StakeDelegated): void {
+  let graphNetwork = loadGraphNetwork()
   let zeroShares = event.params.shares.equals(BigInt.fromI32(0))
 
   // update indexer
-  let indexer = createOrLoadLegacyIndexer(event.params.indexer, event.block.timestamp)
+  let indexer = createOrLoadLegacyIndexer(event.params.indexer, event.block.timestamp, graphNetwork)
   indexer.delegatedTokens = indexer.delegatedTokens.plus(event.params.tokens)
   indexer.delegatorShares = indexer.delegatorShares.plus(event.params.shares)
 
@@ -244,7 +246,7 @@ export function handleStakeDelegated(event: StakeDelegated): void {
 
   // update delegator
   let delegatorID = event.params.delegator.toHexString()
-  let delegator = createOrLoadDelegator(event.params.delegator, event.block.timestamp)
+  let delegator = createOrLoadDelegator(event.params.delegator, event.block.timestamp, graphNetwork)
   delegator.totalStakedTokens = delegator.totalStakedTokens.plus(event.params.tokens)
   delegator.save()
 
@@ -253,6 +255,7 @@ export function handleStakeDelegated(event: StakeDelegated): void {
     delegatorID,
     event.params.indexer.toHexString(),
     event.block.timestamp.toI32(),
+    graphNetwork,
   )
   if (!zeroShares) {
     let previousExchangeRate = delegatedStake.personalExchangeRate
@@ -279,7 +282,6 @@ export function handleStakeDelegated(event: StakeDelegated): void {
   delegator = Delegator.load(delegatorID) as Delegator
 
   // upgrade graph network
-  let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
   graphNetwork.totalDelegatedTokens = graphNetwork.totalDelegatedTokens.plus(event.params.tokens)
 
   if (isStakeBecomingActive) {
@@ -412,7 +414,7 @@ export function handleAllocationCreated(event: AllocationCreated): void {
   graphNetwork.save()
 
   // update subgraph deployment
-  let deployment = createOrLoadSubgraphDeployment(subgraphDeploymentID, event.block.timestamp)
+  let deployment = createOrLoadSubgraphDeployment(subgraphDeploymentID, event.block.timestamp, graphNetwork)
   deployment.stakedTokens = deployment.stakedTokens.plus(event.params.tokens)
   deployment.save()
 
@@ -612,7 +614,7 @@ export function handleAllocationClosed(event: AllocationClosed): void {
   // update subgraph deployment. Pretty sure this should be done here, if not
   // it would be done in handleRebateClaimed
   let subgraphDeploymentID = event.params.subgraphDeploymentID.toHexString()
-  let deployment = createOrLoadSubgraphDeployment(subgraphDeploymentID, event.block.timestamp)
+  let deployment = createOrLoadSubgraphDeployment(subgraphDeploymentID, event.block.timestamp, graphNetwork)
   deployment.stakedTokens = deployment.stakedTokens.minus(event.params.tokens)
   deployment.save()
 
@@ -697,7 +699,7 @@ export function handleAllocationClosedCobbDouglas(event: AllocationClosed1): voi
   // update subgraph deployment. Pretty sure this should be done here, if not
   // it would be done in handleRebateClaimed
   let subgraphDeploymentID = event.params.subgraphDeploymentID.toHexString()
-  let deployment = createOrLoadSubgraphDeployment(subgraphDeploymentID, event.block.timestamp)
+  let deployment = createOrLoadSubgraphDeployment(subgraphDeploymentID, event.block.timestamp, graphNetwork)
   deployment.stakedTokens = deployment.stakedTokens.minus(event.params.tokens)
   deployment.save()
 

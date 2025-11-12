@@ -1,7 +1,7 @@
 import { ServiceRegistered, ServiceUnregistered } from '../types/ServiceRegistry/ServiceRegistry'
 import { Indexer } from '../types/schema'
 
-import { createOrLoadLegacyIndexer, createOrLoadGraphAccount } from './helpers/helpers'
+import { createOrLoadLegacyIndexer, createOrLoadGraphAccount, loadGraphNetwork } from './helpers/helpers'
 import { getAndUpdateIndexerDailyData } from './helpers/daily-data'
 
 /**
@@ -9,10 +9,11 @@ import { getAndUpdateIndexerDailyData } from './helpers/daily-data'
  * - updates indexer, creates if needed
  */
 export function handleServiceRegistered(event: ServiceRegistered): void {
+  let graphNetwork = loadGraphNetwork()
   // Creates Graph Account, if needed
   createOrLoadGraphAccount(event.params.indexer, event.block.timestamp)
 
-  let indexer = createOrLoadLegacyIndexer(event.params.indexer, event.block.timestamp)
+  let indexer = createOrLoadLegacyIndexer(event.params.indexer, event.block.timestamp, graphNetwork)
   indexer.url = event.params.url
   indexer.geoHash = event.params.geohash
   indexer.save()

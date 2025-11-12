@@ -5,13 +5,14 @@ import {
   CuratorBalanceReceived,
 } from '../types/L2GNS/L2GNS'
 
-import { Subgraph, SubgraphDeployment, SubgraphVersion } from '../types/schema'
+import { GraphNetwork, Subgraph, SubgraphDeployment, SubgraphVersion } from '../types/schema'
 
 import {
   createOrLoadSubgraph,
   createOrLoadNameSignal,
   createOrLoadGraphAccount,
   convertBigIntSubgraphIDToBase58,
+  loadGraphNetwork,
 } from './helpers/helpers'
 import { getAndUpdateSubgraphDeploymentDailyData } from './helpers/daily-data'
 
@@ -24,6 +25,7 @@ import { getAndUpdateSubgraphDeploymentDailyData } from './helpers/daily-data'
     );
 */
 export function handleSubgraphReceivedFromL1(event: SubgraphReceivedFromL1): void {
+  let graphNetwork = loadGraphNetwork()
   let bigIntID = event.params._l2SubgraphID
   let subgraphID = convertBigIntSubgraphIDToBase58(bigIntID)
 
@@ -32,6 +34,7 @@ export function handleSubgraphReceivedFromL1(event: SubgraphReceivedFromL1): voi
     event.params._l2SubgraphID,
     event.params._owner,
     event.block.timestamp,
+    graphNetwork,
   )
   subgraph.startedTransferToL2 = true
   subgraph.startedTransferToL2At = event.block.timestamp
@@ -48,6 +51,7 @@ export function handleSubgraphReceivedFromL1(event: SubgraphReceivedFromL1): voi
     event.params._owner,
     subgraphID,
     event.block.timestamp,
+    graphNetwork,
   )
   nameSignal.transferredToL2 = true
   nameSignal.transferredToL2At = event.block.timestamp
@@ -89,6 +93,7 @@ export function handleSubgraphL2TransferFinalized(event: SubgraphL2TransferFinal
 // event CuratorBalanceReceived(uint256 _l2SubgraphID, address _l2Curator, uint256 _tokens);
 
 export function handleCuratorBalanceReceived(event: CuratorBalanceReceived): void {
+  let graphNetwork = loadGraphNetwork()
   let bigIntID = event.params._l2SubgraphID
   let subgraphID = convertBigIntSubgraphIDToBase58(bigIntID)
 
@@ -96,6 +101,7 @@ export function handleCuratorBalanceReceived(event: CuratorBalanceReceived): voi
     event.params._l2Curator,
     subgraphID,
     event.block.timestamp,
+    graphNetwork,
   )
   nameSignal.transferredToL2 = true
   nameSignal.transferredToL2At = event.block.timestamp
