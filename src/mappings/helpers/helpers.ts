@@ -102,6 +102,7 @@ export function createOrLoadSubgraphDeployment(
     deployment.indexingDelegatorRewardAmount = BigInt.fromI32(0)
     deployment.queryFeesAmount = BigInt.fromI32(0)
     deployment.queryFeeRebates = BigInt.fromI32(0)
+    deployment.delegatorQueryFees = BigInt.fromI32(0)
     deployment.delegatorsQueryFeeRebates = BigInt.fromI32(0)
     deployment.curatorFeeRewards = BigInt.fromI32(0)
     deployment.signalledTokensReceivedOnL2 = BigInt.fromI32(0)
@@ -349,8 +350,10 @@ export function createOrLoadDelegator(delegatorAddress: Bytes, timestamp: BigInt
     delegator.totalUnstakedTokens = BigInt.fromI32(0)
     delegator.createdAt = timestamp.toI32()
     delegator.totalRealizedRewards = BigDecimal.fromString('0')
+    delegator.stakedTokens = BigInt.fromI32(0)
     delegator.lockedTokens = BigInt.fromI32(0)
     delegator.totalUnrealizedRewards = BigDecimal.fromString('0')
+    delegator.originalDelegation = BigDecimal.fromString('0')
     delegator.currentDelegation = BigDecimal.fromString('0')
     delegator.stakesCount = 0
     delegator.activeStakesCount = 0
@@ -379,6 +382,8 @@ export function createOrLoadDelegatedStake(
     delegatedStake.indexer = indexer
     delegatedStake.delegator = delegator
     delegatedStake.stakedTokens = BigInt.fromI32(0)
+    delegatedStake.totalStakedTokens = BigInt.fromI32(0)
+    delegatedStake.totalUnstakedTokens = BigInt.fromI32(0)
     delegatedStake.transferredToL2 = false
     delegatedStake.stakedTokensTransferredToL2 = BigInt.fromI32(0)
     delegatedStake.unstakedTokens = BigInt.fromI32(0)
@@ -388,6 +393,7 @@ export function createOrLoadDelegatedStake(
     delegatedStake.legacyLockedUntil = 0
     delegatedStake.shareAmount = BigInt.fromI32(0)
     delegatedStake.personalExchangeRate = BigDecimal.fromString('1')
+    delegatedStake.latestIndexerExchangeRate = BigDecimal.fromString('1')
     delegatedStake.unrealizedRewards = BigDecimal.fromString('0')
     delegatedStake.realizedRewards = BigDecimal.fromString('0')
     delegatedStake.originalDelegation = BigDecimal.fromString('0')
@@ -423,6 +429,8 @@ export function createOrLoadDelegatedStakeForProvision(
     delegatedStake.provision = provisionId
     delegatedStake.delegator = delegator
     delegatedStake.stakedTokens = BigInt.fromI32(0)
+    delegatedStake.totalStakedTokens = BigInt.fromI32(0)
+    delegatedStake.totalUnstakedTokens = BigInt.fromI32(0)
     delegatedStake.transferredToL2 = false
     delegatedStake.stakedTokensTransferredToL2 = BigInt.fromI32(0)
     delegatedStake.unstakedTokens = BigInt.fromI32(0)
@@ -432,6 +440,7 @@ export function createOrLoadDelegatedStakeForProvision(
     delegatedStake.legacyLockedUntil = 0
     delegatedStake.shareAmount = BigInt.fromI32(0)
     delegatedStake.personalExchangeRate = BigDecimal.fromString('1')
+    delegatedStake.latestIndexerExchangeRate = BigDecimal.fromString('1')
     delegatedStake.unrealizedRewards = BigDecimal.fromString('0')
     delegatedStake.realizedRewards = BigDecimal.fromString('0')
     delegatedStake.originalDelegation = BigDecimal.fromString('0')

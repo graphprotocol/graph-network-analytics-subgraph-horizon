@@ -1,4 +1,4 @@
-import { BigInt } from '@graphprotocol/graph-ts'
+import { BigInt, BigDecimal } from '@graphprotocol/graph-ts'
 import { addresses } from '../../config/addresses'
 import { AllowedLockedVerifierSet, DelegatedTokensWithdrawn, DelegationFeeCutSet, DelegationSlashed, DelegationSlashingEnabled, HorizonStakeDeposited, HorizonStakeLocked, HorizonStakeWithdrawn, MaxThawingPeriodSet, OperatorSet, StakeDelegatedWithdrawn, ThawingPeriodCleared, TokensDelegated, TokensDeprovisioned, TokensToDelegationPoolAdded, TokensUndelegated } from '../types/HorizonStaking/HorizonStaking'
 import { DataService, DelegatedStake, Delegator, GraphNetwork, Indexer, Provision, ThawRequest } from '../types/schema'
@@ -464,6 +464,7 @@ export function handleTokensDelegated(event: TokensDelegated): void {
         event.block.timestamp.toI32(),
         graphNetwork,
     )
+    let oldOriginalDelegation = delegatedStake.originalDelegation
 
     if (!zeroShares) {
         let previousExchangeRate = delegatedStake.personalExchangeRate
@@ -482,12 +483,22 @@ export function handleTokensDelegated(event: TokensDelegated): void {
     let isStakeBecomingActive = delegatedStake.shareAmount.isZero() && !event.params.shares.isZero()
 
     delegatedStake.stakedTokens = delegatedStake.stakedTokens.plus(event.params.tokens)
+    delegatedStake.totalStakedTokens = delegatedStake.totalStakedTokens.plus(event.params.tokens)
     delegatedStake.shareAmount = delegatedStake.shareAmount.plus(event.params.shares)
     delegatedStake.lastDelegatedAt = event.block.timestamp.toI32()
+    delegatedStake.originalDelegation = delegatedStake.personalExchangeRate.times(
+        delegatedStake.shareAmount.toBigDecimal(),
+    )
     delegatedStake.save()
 
     // reload delegator to avoid edge case where we can overwrite stakesCount if stake is new
     delegator = Delegator.load(delegatorID) as Delegator
+    delegator.stakedTokens = delegator.stakedTokens.plus(event.params.tokens)
+    delegator.lastDelegatedAt = event.block.timestamp.toI32()
+    delegator.lastDelegation = delegatedStake.id
+    delegator.originalDelegation = delegator.originalDelegation.plus(
+        delegatedStake.originalDelegation.minus(oldOriginalDelegation),
+    )
 
     // upgrade graph network
     graphNetwork.totalDelegatedTokens = graphNetwork.totalDelegatedTokens.plus(event.params.tokens)
@@ -577,6 +588,8 @@ export function handleTokensUndelegated(event: TokensUndelegated): void {
         !delegatedStake.shareAmount.isZero() && delegatedStake.shareAmount == event.params.shares
 
     delegatedStake.unstakedTokens = delegatedStake.unstakedTokens.plus(event.params.tokens)
+    delegatedStake.totalUnstakedTokens = delegatedStake.totalUnstakedTokens.plus(event.params.tokens)
+    delegatedStake.stakedTokens = delegatedStake.stakedTokens.minus(event.params.tokens)
     delegatedStake.shareAmount = delegatedStake.shareAmount.minus(event.params.shares)
     delegatedStake.lockedTokens = delegatedStake.lockedTokens.plus(event.params.tokens)
     delegatedStake.lastUndelegatedAt = event.block.timestamp.toI32()
@@ -584,14 +597,25 @@ export function handleTokensUndelegated(event: TokensUndelegated): void {
     let currentBalance = event.params.shares.toBigDecimal().times(beforeUpdateDelegationExchangeRate)
     let oldBalance = event.params.shares.toBigDecimal().times(delegatedStake.personalExchangeRate)
     let realizedRewards = currentBalance.minus(oldBalance)
+    let oldOriginalDelegation = delegatedStake.originalDelegation
 
     delegatedStake.realizedRewards = delegatedStake.realizedRewards.plus(realizedRewards)
+    delegatedStake.originalDelegation = delegatedStake.personalExchangeRate.times(
+        delegatedStake.shareAmount.toBigDecimal(),
+    )
     delegatedStake.save()
 
     // update delegator
     let delegator = Delegator.load(delegatorID)!
     delegator.totalUnstakedTokens = delegator.totalUnstakedTokens.plus(event.params.tokens)
     delegator.totalRealizedRewards = delegator.totalRealizedRewards.plus(realizedRewards)
+    delegator.originalDelegation = delegator.originalDelegation.plus(
+        delegatedStake.originalDelegation.minus(oldOriginalDelegation),
+    )
+    delegator.stakedTokens = delegator.stakedTokens.minus(event.params.tokens)
+    delegator.lockedTokens = delegator.lockedTokens.plus(event.params.tokens)
+    delegator.lastUndelegatedAt = event.block.timestamp.toI32()
+    delegator.lastUndelegation = delegatedStake.id
 
     // upgrade graph network
     let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)
@@ -640,6 +664,10 @@ export function handleDelegatedTokensWithdrawn(event: DelegatedTokensWithdrawn):
     let delegatorID = event.params.delegator.toHexString()
     let id = joinID([delegatorID, provision.id])
     let delegatedStake = DelegatedStake.load(id)!
+    let delegator = Delegator.load(delegatorID)!
+    delegator.lockedTokens = delegator.lockedTokens.minus(event.params.tokens)
+    delegator.save()
+
     delegatedStake.lockedTokens = delegatedStake.lockedTokens.minus(event.params.tokens)
     delegatedStake.save()
 

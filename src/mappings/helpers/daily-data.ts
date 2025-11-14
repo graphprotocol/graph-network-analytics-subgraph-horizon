@@ -200,7 +200,7 @@ export function getAndUpdateDelegatorDailyData(
   dailyData.dayNumber = dayNumber
   dailyData.delegator = entity.id
 
-  dailyData.stakedTokens = entity.totalStakedTokens
+  dailyData.stakedTokens = entity.stakedTokens
   dailyData.totalUnstakedTokens = entity.totalUnstakedTokens
   dailyData.lockedTokens = entity.lockedTokens
   dailyData.totalUnrealizedRewards = entity.totalUnrealizedRewards
@@ -242,20 +242,7 @@ export function getAndUpdateDelegatedStakeDailyData(
   dailyData.originalDelegation = entity.originalDelegation
   dailyData.currentDelegation = entity.currentDelegation
   dailyData.stakedTokensTransferredToL2 = entity.stakedTokensTransferredToL2
-
-  let exchangeRate = BIGDECIMAL_ZERO
-  if (entity.provision != null) {
-    let provision = Provision.load(entity.provision as string)
-    if (provision != null) {
-      exchangeRate = provision.delegationExchangeRate
-    }
-  } else {
-    let indexer = Indexer.load(entity.indexer)
-    if (indexer != null) {
-      exchangeRate = indexer.delegationExchangeRate
-    }
-  }
-  dailyData.latestIndexerExchangeRate = exchangeRate
+  dailyData.latestIndexerExchangeRate = entity.latestIndexerExchangeRate
 
   dailyData.save()
 
@@ -291,7 +278,7 @@ export function getAndUpdateSubgraphDeploymentDailyData(
   dailyData.indexingDelegatorRewardAmount = entity.indexingDelegatorRewardAmount
   dailyData.queryFeesAmount = entity.queryFeesAmount
   dailyData.queryFeeRebates = entity.queryFeeRebates
-  dailyData.delegatorQueryFees = entity.delegatorsQueryFeeRebates
+  dailyData.delegatorQueryFees = entity.delegatorQueryFees
   dailyData.curatorFeeRewards = entity.curatorFeeRewards
 
   dailyData.save()

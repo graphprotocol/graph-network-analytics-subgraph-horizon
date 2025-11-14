@@ -5,7 +5,7 @@ import {
   StakeDelegatedUnlockedDueToL2Transfer,
 } from '../types/L1Staking/L1Staking'
 
-import { Indexer, DelegatedStake, GraphNetwork } from '../types/schema'
+import { Indexer, DelegatedStake, GraphNetwork, Delegator } from '../types/schema'
 import { calculateCapacities, createOrLoadGraphNetwork, joinID, updateLegacyAdvancedIndexerMetrics, updateDelegationExchangeRate, loadGraphNetwork } from './helpers/helpers'
 import {
   getAndUpdateGraphNetworkDailyData,
@@ -78,6 +78,8 @@ export function handleDelegationTransferredToL2(event: DelegationTransferredToL2
   )
   delegation.shareAmount = BigInt.fromI32(0);
   delegation.unstakedTokens = delegation.unstakedTokens.plus(event.params.transferredDelegationTokens);
+  delegation.totalUnstakedTokens = delegation.totalUnstakedTokens.plus(event.params.transferredDelegationTokens)
+  delegation.stakedTokens = BigInt.fromI32(0)
   delegation.transferredToL2 = true
   delegation.transferredToL2At = event.block.timestamp
   delegation.transferredToL2AtBlockNumber = event.block.number
@@ -95,6 +97,13 @@ export function handleDelegationTransferredToL2(event: DelegationTransferredToL2
   indexer = updateLegacyAdvancedIndexerMetrics(indexer as Indexer)
   indexer = calculateCapacities(indexer as Indexer)
   indexer.save()
+
+  let delegator = Delegator.load(event.params.delegator.toHexString())
+  if (delegator != null) {
+    delegator.stakedTokens = delegator.stakedTokens.minus(event.params.transferredDelegationTokens)
+    delegator.totalUnstakedTokens = delegator.totalUnstakedTokens.plus(event.params.transferredDelegationTokens)
+    delegator.save()
+  }
 
   // upgrade graph network
   let graphNetwork = createOrLoadGraphNetwork(event.block.number, event.address)

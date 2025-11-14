@@ -424,9 +424,10 @@ export function handleQueryFeesCollected(event: QueryFeesCollected): void {
     deployment.signalledTokens = deployment.signalledTokens.plus(event.params.tokensCurators)
     deployment.curatorFeeRewards = deployment.curatorFeeRewards.plus(event.params.tokensCurators)
     deployment.pricePerShare = calculatePricePerShare(deployment as SubgraphDeployment)
-    deployment.queryFeeRebates = deployment.queryFeeRebates.plus(indexerQueryFees)
-    deployment.delegatorsQueryFeeRebates = deployment.delegatorsQueryFeeRebates.plus(delegationPoolQueryFees)
-    deployment.save()
+  deployment.queryFeeRebates = deployment.queryFeeRebates.plus(indexerQueryFees)
+  deployment.delegatorQueryFees = deployment.delegatorQueryFees.plus(delegationPoolQueryFees)
+  deployment.delegatorsQueryFeeRebates = deployment.delegatorsQueryFeeRebates.plus(delegationPoolQueryFees)
+  deployment.save()
 
     batchUpdateSubgraphSignalledTokens(deployment as SubgraphDeployment)
 

@@ -617,6 +617,8 @@ type SubgraphDeployment @entity(immutable: false) {
   queryFeesAmount: BigInt!
   "Total query fee rebates earned from the protocol, through the rebates formula. Does not include delegation query fees"
   queryFeeRebates: BigInt!
+  "Total query fee rebates for delegators earned from the protocol, through the rebate mechanism formula."
+  delegatorQueryFees: BigInt!
   "Total curator rewards from fees"
   curatorFeeRewards: BigInt!
   "Total query fee rebates earned from the protocol, through the rebates formula. Does not include indexer query fees"
@@ -636,6 +638,9 @@ type SubgraphDeployment @entity(immutable: false) {
   curatorSignals: [Signal!]! @derivedFrom(field: "subgraphDeployment")
   "Bonding curve reserve ratio. In parts per million"
   reserveRatio: Int!
+
+  "Daily snapshots for this SubgraphDeployment"
+  dailyData: [SubgraphDeploymentDailyData!]! @derivedFrom(field: "subgraphDeployment")
 
   # From Subgraph Manifest
   # dataSources: [DataSource!]
@@ -856,6 +861,9 @@ type Indexer @entity(immutable: false) {
 
   "[DEPRECATED] Number of delegators historically associated with this indexer. Retained for compatibility."
   delegatorsCount: BigInt!
+
+  "Daily snapshots for this indexer"
+  dailyData: [IndexerDailyData!]! @derivedFrom(field: "indexer")
 
   # Provisioning
   provisions: [Provision!]! @derivedFrom(field: "indexer")
@@ -1202,17 +1210,32 @@ type Delegator @entity(immutable: false) {
   "Total realized rewards on all delegated stakes. Realized rewards are added when undelegating and realizing a profit"
   totalRealizedRewards: BigDecimal!
 
-  "[DEPRECATED] Total locked tokens across all stakes. Retained for compatibility."
+  "[POSSIBLE DEPRECATION] Current amount of staked tokens across all DelegatedStakes"
+  stakedTokens: BigInt!
+  "Current amount of locked tokens (undelegating) across all DelegatedStakes"
   lockedTokens: BigInt!
-  "[DEPRECATED] Total unrealized rewards across all stakes. Retained for compatibility."
+  "[DEPRECATED] Total unrealized rewards across all delegated stakes. Always 0 on Horizon."
   totalUnrealizedRewards: BigDecimal!
-  "[DEPRECATED] Current delegation across all stakes. Retained for compatibility."
+  "Original amount delegated across all delegated stakes."
+  originalDelegation: BigDecimal!
+  "[DEPRECATED] Current delegation amount across all delegated stakes. Always 0 on Horizon."
   currentDelegation: BigDecimal!
 
   "Total DelegatedStake entity count (Active and inactive)"
   stakesCount: Int!
   "Active DelegatedStake entity count. Active means it still has GRT delegated"
   activeStakesCount: Int!
+  "Last time this delegator delegated towards any indexer"
+  lastDelegatedAt: Int
+  "Last time this delegator undelegated from any indexer"
+  lastUndelegatedAt: Int
+  "DelegatedStake entity related to the lastDelegatedAt field"
+  lastDelegation: DelegatedStake
+  "DelegatedStake entity related to the lastUndelegatedAt field"
+  lastUndelegation: DelegatedStake
+
+  "List of all the daily data entities that exist for this delegator"
+  dailyData: [DelegatorDailyData!]! @derivedFrom(field: "delegator")
 
   "Default display name is the current default name. Used for filtered queries"
   defaultDisplayName: String
@@ -1232,10 +1255,14 @@ type DelegatedStake @entity(immutable: false) {
   provision: Provision
   "Delegator"
   delegator: Delegator!
-  "CUMULATIVE tokens delegated"
+  "[CURRENT] Tokens staked on this delegation"
   stakedTokens: BigInt!
-  "CUMULATIVE tokens undelegated"
+  "CUMULATIVE tokens delegated over time"
+  totalStakedTokens: BigInt!
+  "CURRENT tokens that have been undelegated"
   unstakedTokens: BigInt!
+  "CUMULATIVE tokens undelegated over time"
+  totalUnstakedTokens: BigInt!
   "CURRENT tokens locked"
   lockedTokens: BigInt!
   "Epoch the locked tokens get unlocked"
@@ -1248,13 +1275,15 @@ type DelegatedStake @entity(immutable: false) {
   shareAmount: BigInt!
   "The rate this delegator paid for their shares (calculated using average cost basis). Used for rewards calculations"
   personalExchangeRate: BigDecimal!
-  "[DEPRECATED] Unrealized rewards for this delegation. Retained for compatibility."
+  "[DEPRECATED] Latest delegation exchange rate observed for this stake. Always 0 on Horizon."
+  latestIndexerExchangeRate: BigDecimal!
+  "[DEPRECATED] Unrealized rewards for this delegation. Always 0 on Horizon."
   unrealizedRewards: BigDecimal!
   "Realized rewards from undelegating and realizing a reward"
   realizedRewards: BigDecimal!
-  "[DEPRECATED] Original delegation value for this stake. Retained for compatibility."
+  "Original delegation value for this stake"
   originalDelegation: BigDecimal!
-  "[DEPRECATED] Current delegation value for this stake. Retained for compatibility."
+  "[DEPRECATED] Current delegation value for this stake. Always 0 on Horizon."
   currentDelegation: BigDecimal!
   "Time this delegator first delegated to an indexer"
   createdAt: Int!
