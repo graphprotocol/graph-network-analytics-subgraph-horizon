@@ -5,6 +5,10 @@ schema:
   file: ./schema.graphql
 features:
   - fullTextSearch
+  - grafting
+graft: 
+  base: QmVQGEqhPMa8wmVR4SaQxp4E1A2gQCcCCJw318LJDEf1BD
+  block: 409211400
 dataSources:
   - kind: ethereum/contract
     name: Controller
