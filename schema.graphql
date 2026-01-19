@@ -1806,7 +1806,7 @@ Analytics daily snapshots
 """
 type IndexerDailyData @entity(immutable: false) {
   "<INDEXER ADDRESS>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -1945,7 +1945,7 @@ type IndexerDailyData @entity(immutable: false) {
 
 type DelegatorDailyData @entity(immutable: false) {
   "<DELEGATOR ADDRESS>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -1986,7 +1986,7 @@ type DelegatorDailyData @entity(immutable: false) {
 
 type DelegatedStakeDailyData @entity(immutable: false) {
   "<DELEGATOR ADDRESS>-<INDEXER OR PROVISION ID>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -2051,7 +2051,7 @@ type DelegatedStakeDailyData @entity(immutable: false) {
 
 type DelegatorDelegatedStakeDailyRelation @entity(immutable: false) {
   "[DEPRECATED] Auxiliary entity retained for compatibility."
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -2077,7 +2077,7 @@ type DelegatorDelegatedStakeDailyRelation @entity(immutable: false) {
 
 type SubgraphDeploymentDailyData @entity(immutable: false) {
   "<SUBGRAPH DEPLOYMENT ID>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -2145,7 +2145,7 @@ type SubgraphDeploymentDailyData @entity(immutable: false) {
 
 type GraphNetworkDailyData @entity(immutable: false) {
   "<NETWORK ID>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -2323,7 +2323,7 @@ type GraphNetworkDailyData @entity(immutable: false) {
 
 type ProvisionDailyData @entity(immutable: false) {
   "<PROVISION ID>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -2435,7 +2435,7 @@ type ProvisionDailyData @entity(immutable: false) {
 
 type DataServiceDailyData @entity(immutable: false) {
   "<DATA SERVICE ID>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!

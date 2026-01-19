@@ -1,4 +1,4 @@
-import { BigInt, BigDecimal, Bytes, ByteArray } from '@graphprotocol/graph-ts'
+import { BigInt, BigDecimal } from '@graphprotocol/graph-ts'
 import {
   GraphNetwork,
   GraphNetworkDailyData,
@@ -15,13 +15,13 @@ import {
   DataService,
   DataServiceDailyData,
 } from '../../types/schema'
+import { joinID } from './helpers'
 
 const SECONDS_PER_DAY = 86400
 const LAUNCH_DAY = 18613 // 1608163200 / 86400
 
 const BIGINT_ZERO = BigInt.fromI32(0)
 const BIGDECIMAL_ZERO = BigDecimal.fromString('0')
-const bytesSeparator = Bytes.fromHexString('0xABCDEF')
 
 function dayStart(timestamp: BigInt): BigInt {
   let seconds = timestamp.toI32()
@@ -36,16 +36,8 @@ function toDayNumber(timestamp: BigInt): i32 {
   return timestamp.toI32() / SECONDS_PER_DAY - LAUNCH_DAY
 }
 
-function asBytesFromDay(dayNumber: i32): Bytes {
-  return Bytes.fromI32(dayNumber)
-}
-
-function bytesFromString(value: string): Bytes {
-  return changetype<Bytes>(ByteArray.fromUTF8(value))
-}
-
-function compoundId(prefix: string, dayBytes: Bytes): Bytes {
-  return bytesFromString(prefix).concat(bytesSeparator).concat(dayBytes)
+function dailyDataId(prefix: string, dayNumber: i32): string {
+  return joinID([prefix, dayNumber.toString()])
 }
 
 export function getAndUpdateGraphNetworkDailyData(
@@ -53,7 +45,7 @@ export function getAndUpdateGraphNetworkDailyData(
   timestamp: BigInt,
 ): GraphNetworkDailyData {
   let dayNumber = toDayNumber(timestamp)
-  let id = compoundId(entity.id, asBytesFromDay(dayNumber))
+  let id = dailyDataId(entity.id, dayNumber)
 
   let dailyData = new GraphNetworkDailyData(id)
   dailyData.dayStart = dayStart(timestamp)
@@ -130,7 +122,7 @@ export function getAndUpdateIndexerDailyData(
   timestamp: BigInt,
 ): IndexerDailyData {
   let dayNumber = toDayNumber(timestamp)
-  let id = compoundId(entity.id, asBytesFromDay(dayNumber))
+  let id = dailyDataId(entity.id, dayNumber)
 
   let dailyData = new IndexerDailyData(id)
   dailyData.dayStart = dayStart(timestamp)
@@ -192,7 +184,7 @@ export function getAndUpdateDelegatorDailyData(
   timestamp: BigInt,
 ): DelegatorDailyData {
   let dayNumber = toDayNumber(timestamp)
-  let id = compoundId(entity.id, asBytesFromDay(dayNumber))
+  let id = dailyDataId(entity.id, dayNumber)
 
   let dailyData = new DelegatorDailyData(id)
   dailyData.dayStart = dayStart(timestamp)
@@ -219,7 +211,7 @@ export function getAndUpdateDelegatedStakeDailyData(
   timestamp: BigInt,
 ): DelegatedStakeDailyData {
   let dayNumber = toDayNumber(timestamp)
-  let id = compoundId(entity.id, asBytesFromDay(dayNumber))
+  let id = dailyDataId(entity.id, dayNumber)
 
   let dailyData = new DelegatedStakeDailyData(id)
   dailyData.dayStart = dayStart(timestamp)
@@ -254,7 +246,7 @@ export function getAndUpdateSubgraphDeploymentDailyData(
   timestamp: BigInt,
 ): SubgraphDeploymentDailyData {
   let dayNumber = toDayNumber(timestamp)
-  let id = compoundId(entity.id, asBytesFromDay(dayNumber))
+  let id = dailyDataId(entity.id, dayNumber)
 
   let dailyData = new SubgraphDeploymentDailyData(id)
   dailyData.dayStart = dayStart(timestamp)
@@ -291,7 +283,7 @@ export function getAndUpdateProvisionDailyData(
   timestamp: BigInt,
 ): ProvisionDailyData {
   let dayNumber = toDayNumber(timestamp)
-  let id = compoundId(entity.id, asBytesFromDay(dayNumber))
+  let id = dailyDataId(entity.id, dayNumber)
 
   let dailyData = new ProvisionDailyData(id)
   dailyData.dayStart = dayStart(timestamp)
@@ -343,7 +335,7 @@ export function getAndUpdateDataServiceDailyData(
   timestamp: BigInt,
 ): DataServiceDailyData {
   let dayNumber = toDayNumber(timestamp)
-  let id = compoundId(entity.id, asBytesFromDay(dayNumber))
+  let id = dailyDataId(entity.id, dayNumber)
 
   let dailyData = new DataServiceDailyData(id)
   dailyData.dayStart = dayStart(timestamp)
