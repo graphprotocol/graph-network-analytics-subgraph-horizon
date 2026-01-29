@@ -369,13 +369,36 @@ export function createOrLoadDelegator(delegatorAddress: Bytes, timestamp: BigInt
   return delegator as Delegator
 }
 
+export function getHorizonDelegatedStakeID(delegator: string, indexer: string, dataService: string): string {
+  return joinID([delegator, indexer, dataService])
+}
+
+export function getHorizonDelegatedStakeIDFromLegacy(delegator: string, indexer: string): string {
+  return joinID([delegator, indexer, addresses.subgraphService])
+}
+
+export function getHorizonDelegatedStake(delegator: string, indexer: string, dataService: string): DelegatedStake {
+  let provisionId = joinID([indexer, dataService])
+  let id = getHorizonDelegatedStakeID(delegator, indexer, dataService)
+  let delegatedStake = DelegatedStake.load(id)!
+  // In case the delegation was created before Horizon, once it's get loaded on a Horizon event, we add the missing fields.
+  // This can happen due to keeping IDs compatible across
+  if (delegatedStake.dataService == null) {
+    delegatedStake.dataService = dataService
+    delegatedStake.provision = provisionId
+    delegatedStake.isLegacy = false
+  }
+  return delegatedStake as DelegatedStake
+}
+
 export function createOrLoadDelegatedStake(
   delegator: string,
   indexer: string,
   timestamp: i32,
   graphNetwork: GraphNetwork,
 ): DelegatedStake {
-  let id = joinID([delegator, indexer])
+  // Hardcoding the subgraph service to the id, so that legacy and Horizon delegatedStake entities share the same id.
+  let id = getHorizonDelegatedStakeIDFromLegacy(delegator, indexer)
   let delegatedStake = DelegatedStake.load(id)
   if (delegatedStake == null) {
     delegatedStake = new DelegatedStake(id)
@@ -399,6 +422,7 @@ export function createOrLoadDelegatedStake(
     delegatedStake.originalDelegation = BigDecimal.fromString('0')
     delegatedStake.currentDelegation = BigDecimal.fromString('0')
     delegatedStake.createdAt = timestamp
+    delegatedStake.isLegacy = true
 
     delegatedStake.save()
 
@@ -420,7 +444,7 @@ export function createOrLoadDelegatedStakeForProvision(
   graphNetwork: GraphNetwork,
 ): DelegatedStake {
   let provisionId = joinID([indexer, dataService])
-  let id = joinID([delegator, provisionId])
+  let id = getHorizonDelegatedStakeID(delegator, indexer, dataService)
   let delegatedStake = DelegatedStake.load(id)
   if (delegatedStake == null) {
     delegatedStake = new DelegatedStake(id)
@@ -446,6 +470,7 @@ export function createOrLoadDelegatedStakeForProvision(
     delegatedStake.originalDelegation = BigDecimal.fromString('0')
     delegatedStake.currentDelegation = BigDecimal.fromString('0')
     delegatedStake.createdAt = timestamp
+    delegatedStake.isLegacy = false
 
     delegatedStake.save()
 
@@ -455,6 +480,13 @@ export function createOrLoadDelegatedStakeForProvision(
 
     graphNetwork.delegationCount = graphNetwork.delegationCount + 1
     graphNetwork.save()
+  }
+  // In case the delegation was created before Horizon, once it's get loaded on a Horizon event, we add the missing fields.
+  // This can happen due to keeping IDs compatible across
+  if (delegatedStake.dataService == null) {
+    delegatedStake.dataService = dataService
+    delegatedStake.provision = provisionId
+    delegatedStake.isLegacy = false
   }
   return delegatedStake as DelegatedStake
 }

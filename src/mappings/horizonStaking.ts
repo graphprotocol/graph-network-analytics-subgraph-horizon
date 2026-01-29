@@ -2,7 +2,7 @@ import { BigInt, BigDecimal } from '@graphprotocol/graph-ts'
 import { addresses } from '../../config/addresses'
 import { AllowedLockedVerifierSet, DelegatedTokensWithdrawn, DelegationFeeCutSet, DelegationSlashed, DelegationSlashingEnabled, HorizonStakeDeposited, HorizonStakeLocked, HorizonStakeWithdrawn, MaxThawingPeriodSet, OperatorSet, StakeDelegatedWithdrawn, ThawingPeriodCleared, TokensDelegated, TokensDeprovisioned, TokensToDelegationPoolAdded, TokensUndelegated } from '../types/HorizonStaking/HorizonStaking'
 import { DataService, DelegatedStake, Delegator, GraphNetwork, Indexer, Provision, ThawRequest } from '../types/schema'
-import { calculateCapacities, createOrLoadDataService, createOrLoadDelegatedStakeForProvision, createOrLoadDelegator, createOrLoadEpoch, createOrLoadGraphAccount, createOrLoadGraphNetwork, createOrLoadHorizonOperator, createOrLoadIndexer, createOrLoadProvision, joinID, loadGraphNetwork, updateAdvancedIndexerMetrics, updateAdvancedProvisionMetrics, updateDelegationExchangeRate, updateDelegationExchangeRateForProvision } from './helpers/helpers'
+import { calculateCapacities, createOrLoadDataService, createOrLoadDelegatedStakeForProvision, createOrLoadDelegator, createOrLoadEpoch, createOrLoadGraphAccount, createOrLoadGraphNetwork, createOrLoadHorizonOperator, createOrLoadIndexer, createOrLoadProvision, getHorizonDelegatedStake, getHorizonDelegatedStakeID, loadGraphNetwork, updateAdvancedIndexerMetrics, updateAdvancedProvisionMetrics, updateDelegationExchangeRate, updateDelegationExchangeRateForProvision } from './helpers/helpers'
 import {
   getAndUpdateGraphNetworkDailyData,
   getAndUpdateIndexerDailyData,
@@ -582,8 +582,11 @@ export function handleTokensUndelegated(event: TokensUndelegated): void {
 
     // update delegated stake
     let delegatorID = event.params.delegator.toHexString()
-    let id = joinID([delegatorID, provision.id])
-    let delegatedStake = DelegatedStake.load(id)!
+    let delegatedStake = getHorizonDelegatedStake(
+        event.params.delegator.toHexString(),
+        event.params.serviceProvider.toHexString(),
+        event.params.verifier.toHexString()
+    )
 
     let isStakeBecomingInactive =
         !delegatedStake.shareAmount.isZero() && delegatedStake.shareAmount == event.params.shares
@@ -663,8 +666,11 @@ export function handleDelegatedTokensWithdrawn(event: DelegatedTokensWithdrawn):
 
     // update delegated stake
     let delegatorID = event.params.delegator.toHexString()
-    let id = joinID([delegatorID, provision.id])
-    let delegatedStake = DelegatedStake.load(id)!
+    let delegatedStake = getHorizonDelegatedStake(
+        event.params.delegator.toHexString(),
+        event.params.serviceProvider.toHexString(),
+        event.params.verifier.toHexString()
+    )
     let delegator = Delegator.load(delegatorID)!
     delegator.lockedTokens = delegator.lockedTokens.minus(event.params.tokens)
     delegator.save()

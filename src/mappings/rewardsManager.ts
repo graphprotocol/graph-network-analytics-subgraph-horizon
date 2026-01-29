@@ -12,7 +12,8 @@ import {
   createOrLoadEpoch,
   updateLegacyAdvancedIndexerMetrics,
   updateDelegationExchangeRate,
-  createOrLoadGraphNetwork
+  createOrLoadGraphNetwork,
+  calculateCapacities
 } from './helpers/helpers'
 import {
   getAndUpdateGraphNetworkDailyData,
@@ -136,6 +137,7 @@ function processRewardsAssigned(
     indexer = updateDelegationExchangeRate(indexer as Indexer)
   }
   indexer = updateLegacyAdvancedIndexerMetrics(indexer as Indexer)
+  indexer = calculateCapacities(indexer as Indexer)
   indexer.save()
 
   // update allocation

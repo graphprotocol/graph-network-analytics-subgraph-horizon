@@ -1245,7 +1245,7 @@ type Delegator @entity(immutable: false) {
 Delegator stake for a single Indexer
 """
 type DelegatedStake @entity(immutable: false) {
-  "Concatenation of Delegator address and Indexer address"
+  "Concatenation of Delegator address and Provision ID. For compatibility purposes for Horizon, Legacy entities will have the SubgraphService address hardcoded such that <Indexer-SubgraphService> is the provision address"
   id: ID!
   "Indexer the stake is delegated to"
   indexer: Indexer!
@@ -1305,6 +1305,8 @@ type DelegatedStake @entity(immutable: false) {
   idOnL2: String
   "ID of the delegation on L1. Null if it's not transferred"
   idOnL1: String
+  "Whether the delegation is still legacy/hasn't had any Horizon native interactions yet"
+  isLegacy: Boolean!
 }
 
 """
@@ -2012,6 +2014,9 @@ type DelegatedStakeDailyData @entity(immutable: false) {
   "Data service for this delegation, if Horizon delegation"
   dataService: DataService
 
+  "Whether the delegation is still legacy/hasn't had any Horizon native interactions yet"
+  isLegacy: Boolean!
+
   "[CURRENT] Amount of staked tokens for this day and this indexer"
   stakedTokens: BigInt!
 
@@ -2049,6 +2054,9 @@ type DelegatedStakeDailyData @entity(immutable: false) {
   stakedTokensTransferredToL2: BigInt!
 }
 
+"""
+[DEPRECATED] Auxiliary entity retained for compatibility
+"""
 type DelegatorDelegatedStakeDailyRelation @entity(immutable: false) {
   "[DEPRECATED] Auxiliary entity retained for compatibility."
   id: ID!

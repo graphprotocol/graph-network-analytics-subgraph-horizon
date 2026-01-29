@@ -222,6 +222,7 @@ export function getAndUpdateDelegatedStakeDailyData(
   dailyData.indexer = entity.indexer
   dailyData.provision = entity.provision
   dailyData.dataService = entity.dataService
+  dailyData.isLegacy = entity.isLegacy
 
   dailyData.stakedTokens = entity.stakedTokens
   dailyData.unstakedTokens = entity.unstakedTokens

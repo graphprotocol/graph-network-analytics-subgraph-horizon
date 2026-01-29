@@ -6,7 +6,7 @@ import {
 } from '../types/L1Staking/L1Staking'
 
 import { Indexer, DelegatedStake, GraphNetwork, Delegator } from '../types/schema'
-import { calculateCapacities, createOrLoadGraphNetwork, joinID, updateLegacyAdvancedIndexerMetrics, updateDelegationExchangeRate, loadGraphNetwork } from './helpers/helpers'
+import { calculateCapacities, createOrLoadGraphNetwork, updateLegacyAdvancedIndexerMetrics, updateDelegationExchangeRate, loadGraphNetwork, getHorizonDelegatedStakeIDFromLegacy } from './helpers/helpers'
 import {
   getAndUpdateGraphNetworkDailyData,
   getAndUpdateIndexerDailyData,
@@ -63,14 +63,14 @@ export function handleIndexerStakeTransferredToL2(event: IndexerStakeTransferred
     );
 */
 export function handleDelegationTransferredToL2(event: DelegationTransferredToL2): void {
-  let delegationID = joinID([
+  let delegationID = getHorizonDelegatedStakeIDFromLegacy(
     event.params.delegator.toHexString(),
-    event.params.indexer.toHexString(),
-  ])
-  let delegationIDL2 = joinID([
+    event.params.indexer.toHexString()
+  )
+  let delegationIDL2 = getHorizonDelegatedStakeIDFromLegacy(
     event.params.l2Delegator.toHexString(),
-    event.params.l2Indexer.toHexString(),
-  ])
+    event.params.l2Indexer.toHexString()
+  )
   let delegation = DelegatedStake.load(delegationID)!
   let delegatorSharesBefore = delegation.shareAmount;
   delegation.stakedTokensTransferredToL2 = delegation.stakedTokensTransferredToL2.plus(
@@ -125,10 +125,10 @@ export function handleStakeDelegatedUnlockedDueToL2Transfer(
   event: StakeDelegatedUnlockedDueToL2Transfer,
 ): void {
   let graphNetwork = loadGraphNetwork()
-  let delegationID = joinID([
+  let delegationID = getHorizonDelegatedStakeIDFromLegacy(
     event.params.delegator.toHexString(),
-    event.params.indexer.toHexString(),
-  ])
+    event.params.indexer.toHexString()
+  )
   let delegation = DelegatedStake.load(delegationID)!
   delegation.lockedUntil = graphNetwork.currentEpoch
   delegation.legacyLockedUntil = graphNetwork.currentEpoch
