@@ -11,6 +11,7 @@ import {
   getAndUpdateGraphNetworkDailyData,
   getAndUpdateIndexerDailyData,
   getAndUpdateDelegatedStakeDailyData,
+  getAndUpdateDelegatorDailyData,
 } from './helpers/daily-data'
 
 /*
@@ -103,6 +104,7 @@ export function handleDelegationTransferredToL2(event: DelegationTransferredToL2
     delegator.stakedTokens = delegator.stakedTokens.minus(event.params.transferredDelegationTokens)
     delegator.totalUnstakedTokens = delegator.totalUnstakedTokens.plus(event.params.transferredDelegationTokens)
     delegator.save()
+    getAndUpdateDelegatorDailyData(delegator as Delegator, event.block.timestamp)
   }
 
   // upgrade graph network

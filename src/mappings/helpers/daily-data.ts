@@ -224,6 +224,16 @@ export function getAndUpdateDelegatedStakeDailyData(
   dailyData.dataService = entity.dataService
   dailyData.isLegacy = entity.isLegacy
 
+  dailyData.delegatorDailyData = dailyDataId(entity.delegator, dayNumber)
+  dailyData.indexerDailyData = dailyDataId(entity.indexer, dayNumber)
+  if (entity.provision != null) {
+    dailyData.provisionDailyData = dailyDataId(entity.provision!, dayNumber)
+  }
+
+  if (entity.dataService != null) {
+    dailyData.dataServiceDailyData = dailyDataId(entity.dataService!, dayNumber)
+  }
+
   dailyData.stakedTokens = entity.stakedTokens
   dailyData.unstakedTokens = entity.unstakedTokens
   dailyData.lockedTokens = entity.lockedTokens
@@ -293,6 +303,9 @@ export function getAndUpdateProvisionDailyData(
   dailyData.provision = entity.id
   dailyData.indexer = entity.indexer
   dailyData.dataService = entity.dataService
+
+  dailyData.indexerDailyData = dailyDataId(entity.indexer, dayNumber)
+  dailyData.dataServiceDailyData = dailyDataId(entity.dataService, dayNumber)
 
   dailyData.tokensProvisioned = entity.tokensProvisioned
   dailyData.tokensThawing = entity.tokensThawing

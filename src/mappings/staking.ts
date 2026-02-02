@@ -408,6 +408,7 @@ export function handleStakeDelegatedWithdrawn(event: StakeDelegatedWithdrawn): v
     let delegator = Delegator.load(delegatorID)!
     delegator.lockedTokens = delegator.lockedTokens.minus(lockedBefore)
     delegator.save()
+    getAndUpdateDelegatorDailyData(delegator as Delegator, event.block.timestamp)
   }
   delegatedStake.lockedTokens = BigInt.fromI32(0)
   delegatedStake.legacyLockedTokens = BigInt.fromI32(0)

@@ -340,44 +340,48 @@ export function handleThawRequestCreated(event: ThawRequestCreated): void {
     request.save()
 
     if (request.type == 'Provision') {
-      // update latest thawingUntil for provision and indexer
-      let provision = createOrLoadProvision(
-        event.params.serviceProvider,
-        event.params.verifier,
-        event.block.timestamp,
-      )
-      provision.thawingUntil =
-        event.params.thawingUntil > provision.thawingUntil
-          ? event.params.thawingUntil
-          : provision.thawingUntil
-      provision.save()
+        // update latest thawingUntil for provision and indexer
+        let provision = createOrLoadProvision(
+            event.params.serviceProvider,
+            event.params.verifier,
+            event.block.timestamp,
+        )
+        provision.thawingUntil =
+            event.params.thawingUntil > provision.thawingUntil
+                ? event.params.thawingUntil
+                : provision.thawingUntil
+        provision.save()
 
-      indexer.thawingUntil =
-        event.params.thawingUntil > indexer.thawingUntil
-          ? event.params.thawingUntil
-          : indexer.thawingUntil
-      indexer = calculateCapacities(indexer as Indexer)
-      indexer.save()
+        indexer.thawingUntil =
+            event.params.thawingUntil > indexer.thawingUntil
+                ? event.params.thawingUntil
+                : indexer.thawingUntil
+        indexer = calculateCapacities(indexer as Indexer)
+        indexer.save()
 
-      getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
-      getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+        getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+        getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+        getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
     } else {
-      // update delegated stake for delegation thaw request
-      let delegatedStake = createOrLoadDelegatedStakeForProvision(
-        owner.id,
-        indexer.id,
-        dataService.id,
-        event.block.timestamp.toI32(),
-        graphNetwork,
-      )
+        // update delegated stake for delegation thaw request
+        let delegatedStake = createOrLoadDelegatedStakeForProvision(
+            owner.id,
+            indexer.id,
+            dataService.id,
+            event.block.timestamp.toI32(),
+            graphNetwork,
+        )
 
-      delegatedStake.lockedUntil =
-        event.params.thawingUntil.toI32() > delegatedStake.lockedUntil
-          ? event.params.thawingUntil.toI32()
-          : delegatedStake.lockedUntil
-      delegatedStake.save()
+        delegatedStake.lockedUntil =
+            event.params.thawingUntil.toI32() > delegatedStake.lockedUntil
+                ? event.params.thawingUntil.toI32()
+                : delegatedStake.lockedUntil
+        delegatedStake.save()
 
-      getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
+        getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
+        getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+        getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
+        getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
     }
 }
 
@@ -680,6 +684,7 @@ export function handleDelegatedTokensWithdrawn(event: DelegatedTokensWithdrawn):
 
     getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
     getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateDelegatorDailyData(delegator as Delegator, event.block.timestamp)
     getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
 }
 
