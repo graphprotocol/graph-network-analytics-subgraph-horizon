@@ -1052,14 +1052,16 @@ export function calculateDelegatedStakeRatio(indexer: Indexer): BigDecimal {
 }
 
 export function calculateIndexingRewardEffectiveCut(indexer: Indexer): BigDecimal {
-  let delegatorCut = BigInt.fromI32(indexer.indexingRewardCut).toBigDecimal() / BigDecimal.fromString('1000000')
+  let delegatorCut =
+    BigInt.fromI32(1000000 - indexer.indexingRewardCut).toBigDecimal() / BigDecimal.fromString('1000000')
   return indexer.delegatedStakeRatio == BigDecimal.fromString('0')
     ? BigDecimal.fromString('0')
     : BigDecimal.fromString('1') - delegatorCut / indexer.delegatedStakeRatio
 }
 
 export function calculateQueryFeeEffectiveCut(indexer: Indexer): BigDecimal {
-  let delegatorCut = BigInt.fromI32(indexer.queryFeeCut).toBigDecimal() / BigDecimal.fromString('1000000')
+  let delegatorCut =
+    BigInt.fromI32(1000000 - indexer.queryFeeCut).toBigDecimal() / BigDecimal.fromString('1000000')
   return indexer.delegatedStakeRatio == BigDecimal.fromString('0')
     ? BigDecimal.fromString('0')
     : BigDecimal.fromString('1') - delegatorCut / indexer.delegatedStakeRatio
@@ -1067,21 +1069,23 @@ export function calculateQueryFeeEffectiveCut(indexer: Indexer): BigDecimal {
 
 export function calculateIndexerRewardOwnGenerationRatio(indexer: Indexer): BigDecimal {
   let rewardCut =
-    BigInt.fromI32(1000000 -indexer.indexingRewardCut).toBigDecimal() / BigDecimal.fromString('1000000')
+    BigInt.fromI32(indexer.indexingRewardCut).toBigDecimal() / BigDecimal.fromString('1000000')
   return indexer.ownStakeRatio == BigDecimal.fromString('0')
     ? BigDecimal.fromString('0')
     : rewardCut / indexer.ownStakeRatio
 }
 
 export function calculateLegacyIndexingRewardEffectiveCut(indexer: Indexer): BigDecimal {
-  let delegatorCut = BigInt.fromI32(indexer.legacyIndexingRewardCut).toBigDecimal() / BigDecimal.fromString('1000000')
+  let delegatorCut =
+    BigInt.fromI32(1000000 - indexer.legacyIndexingRewardCut).toBigDecimal() / BigDecimal.fromString('1000000')
   return indexer.delegatedStakeRatio == BigDecimal.fromString('0')
     ? BigDecimal.fromString('0')
     : BigDecimal.fromString('1') - delegatorCut / indexer.delegatedStakeRatio
 }
 
 export function calculateLegacyQueryFeeEffectiveCut(indexer: Indexer): BigDecimal {
-  let delegatorCut = BigInt.fromI32(indexer.legacyQueryFeeCut).toBigDecimal() / BigDecimal.fromString('1000000')
+  let delegatorCut =
+    BigInt.fromI32(1000000 - indexer.legacyQueryFeeCut).toBigDecimal() / BigDecimal.fromString('1000000')
   return indexer.delegatedStakeRatio == BigDecimal.fromString('0')
     ? BigDecimal.fromString('0')
     : BigDecimal.fromString('1') - delegatorCut / indexer.delegatedStakeRatio
@@ -1089,7 +1093,7 @@ export function calculateLegacyQueryFeeEffectiveCut(indexer: Indexer): BigDecima
 
 export function calculateLegacyIndexerRewardOwnGenerationRatio(indexer: Indexer): BigDecimal {
   let rewardCut =
-    BigInt.fromI32(1000000 - indexer.legacyIndexingRewardCut).toBigDecimal() / BigDecimal.fromString('1000000')
+    BigInt.fromI32(indexer.legacyIndexingRewardCut).toBigDecimal() / BigDecimal.fromString('1000000')
   return indexer.ownStakeRatio == BigDecimal.fromString('0')
     ? BigDecimal.fromString('0')
     : rewardCut / indexer.ownStakeRatio
@@ -1200,6 +1204,7 @@ export function updateAdvancedProvisionMetrics(provision: Provision): Provision 
 
 export function updateDelegationExchangeRate(indexer: Indexer): Indexer {
   indexer.delegationExchangeRate = indexer.delegatedTokens
+    .minus(indexer.delegatedThawingTokens)
     .toBigDecimal()
     .div(indexer.delegatorShares.toBigDecimal())
     .truncate(18)
@@ -1208,6 +1213,7 @@ export function updateDelegationExchangeRate(indexer: Indexer): Indexer {
 
 export function updateDelegationExchangeRateForProvision(provision: Provision): Provision {
   provision.delegationExchangeRate = provision.delegatedTokens
+    .minus(provision.delegatedThawingTokens)
     .toBigDecimal()
     .div(provision.delegatorShares.toBigDecimal())
     .truncate(18)
