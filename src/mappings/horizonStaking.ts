@@ -2,7 +2,7 @@ import { BigInt, BigDecimal } from '@graphprotocol/graph-ts'
 import { addresses } from '../../config/addresses'
 import { AllowedLockedVerifierSet, DelegatedTokensWithdrawn, DelegationFeeCutSet, DelegationSlashed, DelegationSlashingEnabled, HorizonStakeDeposited, HorizonStakeLocked, HorizonStakeWithdrawn, MaxThawingPeriodSet, OperatorSet, StakeDelegatedWithdrawn, ThawingPeriodCleared, TokensDelegated, TokensDeprovisioned, TokensToDelegationPoolAdded, TokensUndelegated } from '../types/HorizonStaking/HorizonStaking'
 import { DataService, DelegatedStake, Delegator, GraphNetwork, Indexer, Provision, ThawRequest } from '../types/schema'
-import { calculateCapacities, createOrLoadDataService, createOrLoadDelegatedStakeForProvision, createOrLoadDelegator, createOrLoadEpoch, createOrLoadGraphAccount, createOrLoadGraphNetwork, createOrLoadHorizonOperator, createOrLoadIndexer, createOrLoadProvision, joinID, loadGraphNetwork, updateAdvancedIndexerMetrics, updateAdvancedProvisionMetrics, updateDelegationExchangeRate, updateDelegationExchangeRateForProvision } from './helpers/helpers'
+import { calculateCapacities, createOrLoadDataService, createOrLoadDelegatedStakeForProvision, createOrLoadDelegator, createOrLoadEpoch, createOrLoadGraphAccount, createOrLoadGraphNetwork, createOrLoadHorizonOperator, createOrLoadIndexer, createOrLoadProvision, getHorizonDelegatedStake, getHorizonDelegatedStakeID, loadGraphNetwork, updateAdvancedIndexerMetrics, updateAdvancedProvisionMetrics, updateDelegationExchangeRate, updateDelegationExchangeRateForProvision } from './helpers/helpers'
 import {
   getAndUpdateGraphNetworkDailyData,
   getAndUpdateIndexerDailyData,
@@ -340,44 +340,48 @@ export function handleThawRequestCreated(event: ThawRequestCreated): void {
     request.save()
 
     if (request.type == 'Provision') {
-      // update latest thawingUntil for provision and indexer
-      let provision = createOrLoadProvision(
-        event.params.serviceProvider,
-        event.params.verifier,
-        event.block.timestamp,
-      )
-      provision.thawingUntil =
-        event.params.thawingUntil > provision.thawingUntil
-          ? event.params.thawingUntil
-          : provision.thawingUntil
-      provision.save()
+        // update latest thawingUntil for provision and indexer
+        let provision = createOrLoadProvision(
+            event.params.serviceProvider,
+            event.params.verifier,
+            event.block.timestamp,
+        )
+        provision.thawingUntil =
+            event.params.thawingUntil > provision.thawingUntil
+                ? event.params.thawingUntil
+                : provision.thawingUntil
+        provision.save()
 
-      indexer.thawingUntil =
-        event.params.thawingUntil > indexer.thawingUntil
-          ? event.params.thawingUntil
-          : indexer.thawingUntil
-      indexer = calculateCapacities(indexer as Indexer)
-      indexer.save()
+        indexer.thawingUntil =
+            event.params.thawingUntil > indexer.thawingUntil
+                ? event.params.thawingUntil
+                : indexer.thawingUntil
+        indexer = calculateCapacities(indexer as Indexer)
+        indexer.save()
 
-      getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
-      getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+        getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
+        getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+        getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
     } else {
-      // update delegated stake for delegation thaw request
-      let delegatedStake = createOrLoadDelegatedStakeForProvision(
-        owner.id,
-        indexer.id,
-        dataService.id,
-        event.block.timestamp.toI32(),
-        graphNetwork,
-      )
+        // update delegated stake for delegation thaw request
+        let delegatedStake = createOrLoadDelegatedStakeForProvision(
+            owner.id,
+            indexer.id,
+            dataService.id,
+            event.block.timestamp.toI32(),
+            graphNetwork,
+        )
 
-      delegatedStake.lockedUntil =
-        event.params.thawingUntil.toI32() > delegatedStake.lockedUntil
-          ? event.params.thawingUntil.toI32()
-          : delegatedStake.lockedUntil
-      delegatedStake.save()
+        delegatedStake.lockedUntil =
+            event.params.thawingUntil.toI32() > delegatedStake.lockedUntil
+                ? event.params.thawingUntil.toI32()
+                : delegatedStake.lockedUntil
+        delegatedStake.save()
 
-      getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
+        getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
+        getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+        getAndUpdateDataServiceDailyData(dataService as DataService, event.block.timestamp)
+        getAndUpdateGraphNetworkDailyData(graphNetwork as GraphNetwork, event.block.timestamp)
     }
 }
 
@@ -561,10 +565,10 @@ export function handleTokensUndelegated(event: TokensUndelegated): void {
     let beforeUpdateDelegationExchangeRate = provision.delegationExchangeRate
 
     provision.delegatorShares = provision.delegatorShares.minus(event.params.shares)
+    provision.delegatedThawingTokens = provision.delegatedThawingTokens.plus(event.params.tokens)
     if (provision.delegatorShares != BigInt.fromI32(0)) {
         provision = updateDelegationExchangeRateForProvision(provision as Provision)
     }
-    provision.delegatedThawingTokens = provision.delegatedThawingTokens.plus(event.params.tokens)
     provision = updateAdvancedProvisionMetrics(provision as Provision)
     provision.save()
 
@@ -572,18 +576,21 @@ export function handleTokensUndelegated(event: TokensUndelegated): void {
     let indexerID = event.params.serviceProvider.toHexString()
     let indexer = Indexer.load(indexerID)!
     indexer.delegatorShares = indexer.delegatorShares.minus(event.params.shares)
+    indexer.delegatedThawingTokens = indexer.delegatedThawingTokens.plus(event.params.tokens)
     if (indexer.delegatorShares != BigInt.fromI32(0)) {
         indexer = updateDelegationExchangeRate(indexer as Indexer)
     }
-    indexer.delegatedThawingTokens = indexer.delegatedThawingTokens.plus(event.params.tokens)
     indexer = updateAdvancedIndexerMetrics(indexer as Indexer)
     indexer = calculateCapacities(indexer as Indexer)
     indexer.save()
 
     // update delegated stake
     let delegatorID = event.params.delegator.toHexString()
-    let id = joinID([delegatorID, provision.id])
-    let delegatedStake = DelegatedStake.load(id)!
+    let delegatedStake = getHorizonDelegatedStake(
+        event.params.delegator.toHexString(),
+        event.params.serviceProvider.toHexString(),
+        event.params.verifier.toHexString()
+    )
 
     let isStakeBecomingInactive =
         !delegatedStake.shareAmount.isZero() && delegatedStake.shareAmount == event.params.shares
@@ -663,8 +670,11 @@ export function handleDelegatedTokensWithdrawn(event: DelegatedTokensWithdrawn):
 
     // update delegated stake
     let delegatorID = event.params.delegator.toHexString()
-    let id = joinID([delegatorID, provision.id])
-    let delegatedStake = DelegatedStake.load(id)!
+    let delegatedStake = getHorizonDelegatedStake(
+        event.params.delegator.toHexString(),
+        event.params.serviceProvider.toHexString(),
+        event.params.verifier.toHexString()
+    )
     let delegator = Delegator.load(delegatorID)!
     delegator.lockedTokens = delegator.lockedTokens.minus(event.params.tokens)
     delegator.save()
@@ -674,6 +684,7 @@ export function handleDelegatedTokensWithdrawn(event: DelegatedTokensWithdrawn):
 
     getAndUpdateProvisionDailyData(provision as Provision, event.block.timestamp)
     getAndUpdateIndexerDailyData(indexer as Indexer, event.block.timestamp)
+    getAndUpdateDelegatorDailyData(delegator as Delegator, event.block.timestamp)
     getAndUpdateDelegatedStakeDailyData(delegatedStake as DelegatedStake, event.block.timestamp)
 }
 

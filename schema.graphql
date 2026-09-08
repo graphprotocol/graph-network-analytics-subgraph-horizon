@@ -1245,7 +1245,7 @@ type Delegator @entity(immutable: false) {
 Delegator stake for a single Indexer
 """
 type DelegatedStake @entity(immutable: false) {
-  "Concatenation of Delegator address and Indexer address"
+  "Concatenation of Delegator address and Provision ID. For compatibility purposes for Horizon, Legacy entities will have the SubgraphService address hardcoded such that <Indexer-SubgraphService> is the provision address"
   id: ID!
   "Indexer the stake is delegated to"
   indexer: Indexer!
@@ -1305,6 +1305,8 @@ type DelegatedStake @entity(immutable: false) {
   idOnL2: String
   "ID of the delegation on L1. Null if it's not transferred"
   idOnL1: String
+  "Whether the delegation is still legacy/hasn't had any Horizon native interactions yet"
+  isLegacy: Boolean!
 }
 
 """
@@ -1806,7 +1808,7 @@ Analytics daily snapshots
 """
 type IndexerDailyData @entity(immutable: false) {
   "<INDEXER ADDRESS>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -1941,11 +1943,14 @@ type IndexerDailyData @entity(immutable: false) {
 
   "[CURRENT] Latest thawing until timestamp for the indexer"
   thawingUntil: BigInt!
+
+  "DelegatedStake daily snapshots referencing this Indexer snapshot"
+  delegatedStakesDailyData: [DelegatedStakeDailyData!]! @derivedFrom(field: "indexerDailyData")
 }
 
 type DelegatorDailyData @entity(immutable: false) {
   "<DELEGATOR ADDRESS>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -1982,11 +1987,14 @@ type DelegatorDailyData @entity(immutable: false) {
 
   "[CURRENT] Amount of active DelegatedStake entities this Delegator had at this point in time"
   activeStakesCount: Int!
+
+  "DelegatedStake daily snapshots referencing this Delegator snapshot"
+  delegatedStakesDailyData: [DelegatedStakeDailyData!]! @derivedFrom(field: "delegatorDailyData")
 }
 
 type DelegatedStakeDailyData @entity(immutable: false) {
   "<DELEGATOR ADDRESS>-<INDEXER OR PROVISION ID>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -2011,6 +2019,21 @@ type DelegatedStakeDailyData @entity(immutable: false) {
 
   "Data service for this delegation, if Horizon delegation"
   dataService: DataService
+
+  "Delegator daily snapshot for this day, if available"
+  delegatorDailyData: DelegatorDailyData
+
+  "Indexer daily snapshot for this day, if available"
+  indexerDailyData: IndexerDailyData
+
+  "Provision daily snapshot for this day, if available"
+  provisionDailyData: ProvisionDailyData
+
+  "DataService daily snapshot for this day, if available"
+  dataServiceDailyData: DataServiceDailyData
+
+  "Whether the delegation is still legacy/hasn't had any Horizon native interactions yet"
+  isLegacy: Boolean!
 
   "[CURRENT] Amount of staked tokens for this day and this indexer"
   stakedTokens: BigInt!
@@ -2049,9 +2072,12 @@ type DelegatedStakeDailyData @entity(immutable: false) {
   stakedTokensTransferredToL2: BigInt!
 }
 
+"""
+[DEPRECATED] Auxiliary entity retained for compatibility
+"""
 type DelegatorDelegatedStakeDailyRelation @entity(immutable: false) {
   "[DEPRECATED] Auxiliary entity retained for compatibility."
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -2077,7 +2103,7 @@ type DelegatorDelegatedStakeDailyRelation @entity(immutable: false) {
 
 type SubgraphDeploymentDailyData @entity(immutable: false) {
   "<SUBGRAPH DEPLOYMENT ID>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -2145,7 +2171,7 @@ type SubgraphDeploymentDailyData @entity(immutable: false) {
 
 type GraphNetworkDailyData @entity(immutable: false) {
   "<NETWORK ID>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -2323,7 +2349,7 @@ type GraphNetworkDailyData @entity(immutable: false) {
 
 type ProvisionDailyData @entity(immutable: false) {
   "<PROVISION ID>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -2339,6 +2365,15 @@ type ProvisionDailyData @entity(immutable: false) {
 
   indexer: Indexer!
   dataService: DataService!
+
+  "Indexer daily snapshot for this day, if available"
+  indexerDailyData: IndexerDailyData
+
+  "DataService daily snapshot for this day, if available"
+  dataServiceDailyData: DataServiceDailyData
+
+  "DelegatedStake daily snapshots referencing this Provision snapshot"
+  delegatedStakesDailyData: [DelegatedStakeDailyData!]! @derivedFrom(field: "provisionDailyData")
 
   "[CURRENT] Tokens provisioned on this provision"
   tokensProvisioned: BigInt!
@@ -2435,7 +2470,7 @@ type ProvisionDailyData @entity(immutable: false) {
 
 type DataServiceDailyData @entity(immutable: false) {
   "<DATA SERVICE ID>-<DAY NUMBER>"
-  id: Bytes!
+  id: ID!
 
   "Timestamp for the start of the day that this entity represents. UTC+0"
   dayStart: BigInt!
@@ -2448,6 +2483,9 @@ type DataServiceDailyData @entity(immutable: false) {
 
   "Original entity that the daily data entity tracks"
   dataService: DataService!
+
+  "Provision daily snapshots referencing this DataService snapshot"
+  provisionsDailyData: [ProvisionDailyData!]! @derivedFrom(field: "dataServiceDailyData")
 
   "[CURRENT] Total tokens provisioned for this data service"
   totalTokensProvisioned: BigInt!
