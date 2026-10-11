@@ -1,6 +1,6 @@
 import { BigDecimal, BigInt, ByteArray, Bytes, crypto, ethereum, log } from "@graphprotocol/graph-ts"
 import { AllocationClosed, AllocationCreated, AllocationResized, CurationCutSet, DelegationRatioSet, IndexingRewardsCollected, MaxPOIStalenessSet, POIPresented, ProvisionTokensRangeSet, QueryFeesCollected, RewardsDestinationSet, ServiceProviderRegistered, StakeToFeesRatioSet, ThawingPeriodRangeSet, VerifierCutRangeSet } from "../types/SubgraphService/SubgraphService"
-import { batchUpdateSubgraphSignalledTokens, calculateCapacities, calculatePricePerShare, createOrLoadDataService, createOrLoadGraphNetwork, createOrLoadEpoch,createOrLoadIndexerQueryFeePaymentAggregation, createOrLoadPaymentSource, createOrLoadProvision, createOrLoadSubgraphDeployment, joinID, updateDelegationExchangeRate, loadGraphNetwork } from "./helpers/helpers"
+import { addCurationFeesToNetworkSignal, batchUpdateSubgraphSignalledTokens, calculateCapacities, calculatePricePerShare, createOrLoadDataService, createOrLoadGraphNetwork, createOrLoadEpoch,createOrLoadIndexerQueryFeePaymentAggregation, createOrLoadPaymentSource, createOrLoadProvision, createOrLoadSubgraphDeployment, joinID, loadGraphNetwork } from "./helpers/helpers"
 import { getAndUpdateGraphNetworkDailyData, getAndUpdateIndexerDailyData, getAndUpdateProvisionDailyData, getAndUpdateDataServiceDailyData, getAndUpdateSubgraphDeploymentDailyData, getAndUpdateDelegatedStakeDailyData, getAndUpdateDelegatorDailyData } from './helpers/daily-data'
 import { Allocation, DataService, GraphNetwork, Indexer, PoiSubmission, Provision, SubgraphDeployment } from "../types/schema"
 import { addresses } from "../../config/addresses"
@@ -545,6 +545,7 @@ export function handleQueryFeesCollected(event: QueryFeesCollected): void {
     graphNetwork.totalCuratorQueryFees = graphNetwork.totalCuratorQueryFees.plus(
         event.params.tokensCurators,
     )
+    graphNetwork = addCurationFeesToNetworkSignal(graphNetwork, deployment, event.params.tokensCurators)
     graphNetwork.totalIndexerQueryFeeRebates = graphNetwork.totalIndexerQueryFeeRebates.plus(
         indexerQueryFees,
     )
