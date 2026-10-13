@@ -7,12 +7,17 @@ import {
   newMockEvent,
   test,
 } from 'matchstick-as/assembly/index'
+import { RebateCollected } from '../src/types/Staking/Staking'
+import { handleRebateCollected } from '../src/mappings/staking'
+import { handleSignalled } from '../src/mappings/curation'
+import { mockSignalled } from './factories/curation'
 import { addresses } from '../config/addresses'
 import { Allocation, GraphNetwork } from '../src/types/schema'
 import {
   AllocationCreated,
   IndexingRewardsCollected,
   POIPresented,
+  QueryFeesCollected,
 } from '../src/types/SubgraphService/SubgraphService'
 import { TargetAllocationUpdated } from '../src/types/IssuanceAllocator/IssuanceAllocator'
 import { ParameterUpdated } from '../src/types/RewardsManager/RewardsManagerStitched'
@@ -21,6 +26,7 @@ import {
   handleAllocationCreated,
   handleIndexingRewardsCollected,
   handlePOIPresented,
+  handleQueryFeesCollected,
 } from '../src/mappings/subgraphService'
 import { handleTargetAllocationUpdated } from '../src/mappings/issuanceAllocator'
 import { handleParameterUpdated } from '../src/mappings/rewardsManager'
@@ -277,4 +283,79 @@ test('RewardsManager falls back to legacy issuance before the allocator getter e
   handleParameterUpdated(event)
   assert.fieldEquals('GraphNetwork', '1', 'networkGRTIssuancePerBlock', '120')
   assert.fieldEquals('GraphNetworkDailyData', '1-0', 'networkGRTIssuancePerBlock', '120')
+})
+
+// Use real curation handlers to establish a pool with one GNS share and three direct shares.
+function seedCurationPool(): void {
+  let network = GraphNetwork.load('1')!
+  let curators = [Address.fromBytes(network.gns), INDEXER]
+  for (let i = 0; i < curators.length; i++) {
+    let signal = mockSignalled(
+      curators[i],
+      DEPLOYMENT,
+      BigInt.fromI32(i == 0 ? 100 : 300),
+      BigInt.fromI32(i == 0 ? 1 : 3),
+      BigInt.fromI32(0),
+    )
+    signal.block.number = baseEvent().block.number
+    signal.block.timestamp = baseEvent().block.timestamp
+    handleSignalled(signal)
+  }
+}
+
+function assertFeeSnapshots(day: i32, total: string, auto: string, direct: string): void {
+  let id = '1-' + day.toString()
+  assert.fieldEquals('GraphNetworkDailyData', id, 'totalTokensSignalled', total)
+  assert.fieldEquals('GraphNetworkDailyData', id, 'totalTokensSignalledAutoMigrate', auto)
+  assert.fieldEquals('GraphNetworkDailyData', id, 'totalTokensSignalledDirectly', direct)
+  assert.fieldEquals(
+    'SubgraphDeploymentDailyData',
+    DEPLOYMENT.toHexString() + '-' + day.toString(),
+    'signalledTokens',
+    total,
+  )
+}
+
+test('Horizon curator fees update daily signal splits and preserve the previous day', () => {
+  seedCurationPool()
+  for (let day = 0; day < 2; day++) {
+    let event = changetype<QueryFeesCollected>(baseEvent())
+    event.block.timestamp = BigInt.fromI32(LAUNCH + day * 86400 + 100)
+    event.parameters = [
+      param('serviceProvider', ethereum.Value.fromAddress(INDEXER)),
+      param('payer', ethereum.Value.fromAddress(INDEXER)),
+      param('allocationId', ethereum.Value.fromAddress(ALLOCATION)),
+      param('subgraphDeploymentId', ethereum.Value.fromFixedBytes(DEPLOYMENT)),
+      param('tokensCollected', uint(200)),
+      param('tokensCurators', uint(100)),
+    ]
+    handleQueryFeesCollected(event)
+  }
+  assertFeeSnapshots(0, '500', '125', '375')
+  assertFeeSnapshots(1, '600', '150', '450')
+  assert.fieldEquals('GraphNetwork', '1', 'totalTokensSignalled', '600')
+  assert.fieldEquals('GraphNetwork', '1', 'totalTokensSignalledAutoMigrate', '150')
+  assert.fieldEquals('GraphNetwork', '1', 'totalTokensSignalledDirectly', '450')
+})
+
+test('Legacy rebate collection includes curator fees in daily signal splits', () => {
+  seedCurationPool()
+  let event = changetype<RebateCollected>(baseEvent())
+  event.address = Address.fromString(addresses.staking)
+  event.parameters = [
+    param('assetHolder', ethereum.Value.fromAddress(INDEXER)),
+    param('indexer', ethereum.Value.fromAddress(INDEXER)),
+    param('subgraphDeploymentID', ethereum.Value.fromFixedBytes(DEPLOYMENT)),
+    param('allocationID', ethereum.Value.fromAddress(ALLOCATION)),
+    param('epoch', uint(2)),
+    param('tokens', uint(200)),
+    param('protocolTax', uint(0)),
+    param('curationFees', uint(100)),
+    param('queryFees', uint(100)),
+    param('queryRebates', uint(100)),
+    param('delegationRewards', uint(0)),
+  ]
+  handleRebateCollected(event)
+  assertFeeSnapshots(0, '500', '125', '375')
+  assert.fieldEquals('GraphNetwork', '1', 'totalTokensSignalled', '500')
 })
